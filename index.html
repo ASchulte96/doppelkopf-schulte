@@ -569,7 +569,7 @@ async function syncPull(){
     const raw=fbFix(await r.json());
     if(!raw)return;
     // Firebase speichert leere Arrays als null → zurücksetzen
-    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln'].forEach(f=>{
+    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln','sitzordnungen'].forEach(f=>{
       if(!Array.isArray(raw[f]))raw[f]=raw[f]?Object.values(raw[f]):[];
     });
     const remote=raw;
@@ -652,12 +652,13 @@ function mkDB(){
       {id:7,kat:'Verhalten',text:'Handy klingeln lassen',strafe:'0,50 €',betrag:.5},
       {id:8,kat:'Verhalten',text:'Spielstand kommentieren',strafe:'0,50 €',betrag:.5},
     ],
+    sitzordnungen:[], // {id, date, seats:[name,...]}
   };
 }
 
 let DB=loadDB(), ME=loadMe();
 // Fehlende Felder auffüllen (alte localStorage-Daten)
-['strafen','ereignisse','termine','kasse','veranstaltungen','regeln','users'].forEach(f=>{if(!Array.isArray(DB[f]))DB[f]=[];});
+['strafen','ereignisse','termine','kasse','veranstaltungen','regeln','users','sitzordnungen'].forEach(f=>{if(!Array.isArray(DB[f]))DB[f]=[];});
 if(!DB.kategorien){
   DB.kategorien=[...new Set(DB.regeln.map(r=>r.kat))].map((name,i)=>({id:i+1,name}));
   saveDB();
@@ -958,6 +959,35 @@ function vStatistik(){
       <div class="stat-head">📋 Ereignis-Protokoll</div>
       ${logRows||'<div class="stat-empty">Noch keine Ereignisse erfasst</div>'}
     </div>
+    ${vPairingStats()}
+  </div>`;
+}
+
+function vPairingStats(){
+  const pairs=computePairings();
+  const sorted=Object.entries(pairs).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length) return`<div class="stat-card wide">
+    <div class="stat-head">🤝 Tisch-Partner</div>
+    <div class="stat-empty">Noch keine Sitzordnungen gespeichert.<br>Würfle eine Sitzordnung und speichere sie.</div>
+  </div>`;
+  const rows=sorted.map(([key,count],i)=>{
+    const [a,b]=key.split('|||');
+    const bar=Math.round((count/sorted[0][1])*100);
+    return`<div class="stat-row" style="flex-direction:column;align-items:stretch;gap:4px;padding:9px 13px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="stat-med">${['🥇','🥈','🥉'][i]||'·'}</span>
+        <span class="stat-nm"><strong>${esc(a)}</strong> &amp; <strong>${esc(b)}</strong></span>
+        <span class="stat-val">${count}×</span>
+      </div>
+      <div style="height:4px;border-radius:2px;background:var(--s3);overflow:hidden;margin-left:31px">
+        <div style="height:100%;width:${bar}%;background:var(--gold);border-radius:2px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }).join('');
+  const total=DB.sitzordnungen.length;
+  return`<div class="stat-card wide">
+    <div class="stat-head">🤝 Tisch-Partner <span style="font-weight:400;color:var(--t3);font-size:.72rem;margin-left:6px">${total} Abend${total!==1?'e':''} gespeichert</span></div>
+    ${rows}
   </div>`;
 }
 
@@ -1467,48 +1497,86 @@ function mSitzordnung(){
 
   function shuffle(arr){
     const a=[...arr];
-    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*49/7*(i+1))%(i+1);[a[i],a[j]]=[a[j],a[i]];}
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
     return a;
   }
 
   function slots(names,rolling){
     return names.map((n,i)=>`
-      <div class="tisch-slot${rolling?' rolling':n?' filled':''}">
+      <div class="tisch-slot${rolling?' rolling':' filled'}">
         <div class="tisch-num">Platz ${i+1}</div>
-        <div class="tisch-av">${n?esc(ini(n)):'?'}</div>
-        <div class="tisch-nm">${esc(n||'…')}</div>
+        <div class="tisch-av">${esc(ini(n))}</div>
+        <div class="tisch-nm">${esc(n)}</div>
       </div>`).join('');
   }
 
+  let currentOrder=shuffle(players);
+
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">🎲 Sitzordnung</div>
-    <div id="tisch-grid" class="tisch-wrap">${slots(players.map(()=>'?'),true)}</div>
+    <div id="tisch-grid" class="tisch-wrap">${slots(currentOrder,true)}</div>
+    <div style="font-size:.72rem;color:var(--t3);text-align:center;margin-top:4px;margin-bottom:12px" id="sitz-hint">Würfelt…</div>
     <div class="sa">
       <button class="s-cancel" id="mc">Schließen</button>
       <button class="s-save" id="ms-neu">Neu würfeln 🎲</button>
     </div>
+    <button class="btn-outline" id="ms-save" style="margin-top:8px;display:none">
+      💾 Diese Sitzordnung speichern
+    </button>
   </div>`);
   document.getElementById('mc').onclick=closeM;
 
   function roll(){
     const grid=document.getElementById('tisch-grid');
+    const hint=document.getElementById('sitz-hint');
+    const saveBtn=document.getElementById('ms-save');
     if(!grid)return;
-    // rolling phase: 18 schnelle frames
+    if(saveBtn) saveBtn.style.display='none';
+    if(hint) hint.textContent='Würfelt…';
     let frame=0;
     const iv=setInterval(()=>{
       const tmp=shuffle(players);
       grid.innerHTML=slots(tmp,true);
       if(++frame>=18){
         clearInterval(iv);
-        // finale Sitzordnung
-        const final=shuffle(players);
-        grid.innerHTML=slots(final,false);
+        currentOrder=shuffle(players);
+        grid.innerHTML=slots(currentOrder,false);
+        if(hint) hint.textContent='Sitzordnung für heute Abend';
+        if(saveBtn) saveBtn.style.display='flex';
       }
     },80);
   }
 
   roll();
   document.getElementById('ms-neu').onclick=roll;
+  document.getElementById('ms-save').onclick=()=>{
+    DB.sitzordnungen.push({
+      id:DB.nextId++,
+      date:new Date().toISOString().slice(0,10),
+      seats:currentOrder,
+      savedBy:ME
+    });
+    saveDB();
+    document.getElementById('sitz-hint').textContent='✅ Gespeichert!';
+    document.getElementById('ms-save').style.display='none';
+  };
+}
+
+function computePairings(){
+  const counts={};
+  DB.sitzordnungen.forEach(s=>{
+    const seats=s.seats||[];
+    for(let i=0;i<seats.length;i++){
+      for(let j=i+1;j<seats.length;j++){
+        const key=[seats[i],seats[j]].sort().join('|||');
+        counts[key]=(counts[key]||0)+1;
+      }
+    }
+  });
+  return counts;
 }
 
 // ══ THEME TOGGLE ══════════════════════════════════════════
