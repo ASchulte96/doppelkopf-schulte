@@ -378,27 +378,30 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 .straf-detail-amt{font-size:.8rem;font-weight:700;color:var(--yel);white-space:nowrap}
 
 /* ── SITZORDNUNG ──────────────────────────────────────── */
-.tisch-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
-.tisch-slot{background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--r);
-  padding:13px 10px;text-align:center;transition:all .2s}
-.tisch-slot.filled{border-color:var(--gold-bd);background:var(--gold-bg)}
-.tisch-slot.rolling{border-color:var(--burg-bd);background:var(--burg-bg)}
-.tisch-num{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--t3);margin-bottom:5px}
-.tisch-slot.filled .tisch-num{color:var(--gold)}
-.tisch-av{width:36px;height:36px;border-radius:50%;background:var(--s4);
-  color:var(--t2);font-size:.8rem;font-weight:800;
-  display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
-.tisch-slot.filled .tisch-av{background:var(--gold);color:var(--bg)}
-.tisch-nm{font-size:.88rem;font-weight:700;color:var(--t1);min-height:1.2em}
-.tisch-slot.rolling .tisch-nm{color:var(--t3);animation:roll .12s steps(1) infinite}
+.tisch-wrap{display:grid;gap:10px;margin:16px 0}
+.tisch-col{background:var(--s2);border:1.5px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
+.tisch-col.filled{border-color:var(--gold-bd)}
+.tisch-col.rolling{border-color:var(--burg-bd)}
+.tisch-head{padding:9px 13px;display:flex;align-items:center;gap:7px;
+  background:rgba(0,0,0,.2);border-bottom:1px solid var(--bd)}
+.tisch-col.filled .tisch-head{background:var(--gold-bg)}
+.tisch-col.rolling .tisch-head{background:var(--burg-bg)}
+.tisch-num{font-size:.8rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--t3);flex:1}
+.tisch-col.filled .tisch-num{color:var(--gold-b)}
+.tisch-player{display:flex;align-items:center;gap:9px;padding:8px 13px;border-top:1px solid var(--bd)}
+.tisch-av{width:28px;height:28px;border-radius:50%;background:var(--s4);
+  color:var(--t2);font-size:.68rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tisch-col.filled .tisch-av{background:var(--gold);color:var(--bg)}
+.tisch-nm{font-size:.88rem;font-weight:600;color:var(--t1)}
+.tisch-col.rolling .tisch-nm{color:var(--t3);animation:roll .12s steps(1) infinite}
 @keyframes roll{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
 .btn-sitz{width:100%;padding:12px;background:var(--burg-bg);border:1.5px solid var(--burg-bd);
   border-radius:var(--rs);color:var(--t1);font-size:.9rem;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px;
   transition:background .15s;margin-bottom:13px}
 .btn-sitz:hover{background:rgba(107,21,32,.4)}
-.btn-sitz-spin{display:inline-block;animation:spin .5s linear infinite}
 
 /* ── WEISHEIT ─────────────────────────────────────────── */
 .wisdom{background:linear-gradient(135deg,rgba(107,21,32,.55),rgba(80,15,24,.4));
@@ -1525,12 +1528,23 @@ function mSitzordnung(){
   }
 
   function slots(names,rolling){
-    return names.map((n,i)=>`
-      <div class="tisch-slot${rolling?' rolling':' filled'}">
-        <div class="tisch-num">Tisch ${i+1}</div>
-        <div class="tisch-av">${esc(ini(n))}</div>
-        <div class="tisch-nm">${esc(n)}</div>
+    const perTable=4;
+    const numTables=Math.ceil(names.length/perTable);
+    const tables=Array.from({length:numTables},(_,t)=>names.slice(t*perTable,(t+1)*perTable));
+    const cols=numTables<=2?`1fr `.repeat(numTables).trim():`1fr 1fr`;
+    const cols_html=tables.map((group,t)=>`
+      <div class="tisch-col${rolling?' rolling':' filled'}">
+        <div class="tisch-head">
+          <span class="tisch-num">Tisch ${t+1}</span>
+          <span style="font-size:.68rem;color:var(--t3)">${group.length} Spieler</span>
+        </div>
+        ${group.map(n=>`
+          <div class="tisch-player">
+            <div class="tisch-av">${esc(ini(n))}</div>
+            <span class="tisch-nm">${esc(n)}</span>
+          </div>`).join('')}
       </div>`).join('');
+    return`<div class="tisch-wrap" style="grid-template-columns:${cols}">${cols_html}</div>`;
   }
 
   let currentOrder=shuffle(players);
@@ -1539,7 +1553,7 @@ function mSitzordnung(){
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">🎲 Sitzordnung</div>
     ${terminInfo}
-    <div id="tisch-grid" class="tisch-wrap">${slots(currentOrder,true)}</div>
+    <div id="tisch-grid">${slots(currentOrder,true)}</div>
     <div style="font-size:.72rem;color:var(--t3);text-align:center;margin-top:4px;margin-bottom:12px" id="sitz-hint">Würfelt…</div>
     <div class="sa">
       <button class="s-cancel" id="mc">Schließen</button>
