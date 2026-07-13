@@ -1528,9 +1528,8 @@ function mSitzordnung(){
   }
 
   function slots(names,rolling){
-    const perTable=4;
-    const numTables=Math.ceil(names.length/perTable);
-    const tables=Array.from({length:numTables},(_,t)=>names.slice(t*perTable,(t+1)*perTable));
+    const half=Math.ceil(names.length/2);
+    const tables=[names.slice(0,half),names.slice(half)];
     const cols=numTables<=2?`1fr `.repeat(numTables).trim():`1fr 1fr`;
     const cols_html=tables.map((group,t)=>`
       <div class="tisch-col${rolling?' rolling':' filled'}">
