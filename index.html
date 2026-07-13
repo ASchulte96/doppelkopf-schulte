@@ -637,11 +637,22 @@ function render(){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===DB.tab));
   document.getElementById('fab').hidden=false;
   const c=document.getElementById('content');
-  if(DB.tab==='termine')   c.innerHTML=vTermine();
-  if(DB.tab==='kasse')     c.innerHTML=vKasse();
-  if(DB.tab==='statistik') c.innerHTML=vStatistik();
-  if(DB.tab==='events')    c.innerHTML=vEvents();
-  if(DB.tab==='regeln')    c.innerHTML=vRegeln();
+  try{
+    if(DB.tab==='termine')   c.innerHTML=vTermine();
+    else if(DB.tab==='kasse')     c.innerHTML=vKasse();
+    else if(DB.tab==='statistik') c.innerHTML=vStatistik();
+    else if(DB.tab==='events')    c.innerHTML=vEvents();
+    else if(DB.tab==='regeln')    c.innerHTML=vRegeln();
+    else c.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p class="empty-t">Unbekannter Tab: "${DB.tab}"</p></div>`;
+  }catch(e){
+    c.innerHTML=`<div style="padding:20px;color:var(--red);font-size:.8rem;word-break:break-all">
+      <strong>Fehler:</strong> ${e.message}<br><br>
+      Tab: ${DB.tab}<br>
+      termine: ${Array.isArray(DB.termine)?DB.termine.length+' Einträge':typeof DB.termine}<br>
+      users: ${Array.isArray(DB.users)?DB.users.length+' Einträge':typeof DB.users}<br>
+      strafen: ${Array.isArray(DB.strafen)?DB.strafen.length+' Einträge':typeof DB.strafen}
+    </div>`;
+  }
   bindContent();
 }
 
