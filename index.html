@@ -11,36 +11,53 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 
 :root{
-  --bg:      #172811;
-  --s1:      #1E3314;
-  --s2:      #243D18;
-  --s3:      #2F5120;
-  --s4:      #3A6B2A;
-  --bd:      rgba(255,255,255,.09);
-  --bd-hi:   rgba(255,255,255,.16);
+  --bg:      #1A5C28;
+  --s1:      #0C1E10;
+  --s2:      #0F2614;
+  --s3:      #132E18;
+  --s4:      #1A3E22;
+  --bd:      rgba(255,255,255,.10);
+  --bd-hi:   rgba(255,255,255,.20);
   --gold:    #C9A34A;
-  --gold-b:  #E2BF6C;
-  --gold-bg: rgba(201,163,74,.13);
-  --gold-bd: rgba(201,163,74,.35);
-  --green:   #4CAF72;
-  --grn-bg:  rgba(76,175,114,.15);
-  --grn-bd:  rgba(76,175,114,.4);
-  --red:     #C45A5A;
-  --red-bg:  rgba(196,90,90,.15);
-  --red-bd:  rgba(196,90,90,.4);
-  --yel:     #D4A017;
-  --yel-bg:  rgba(212,160,23,.15);
-  --yel-bd:  rgba(212,160,23,.4);
-  --t1:      #F0E8CC;
-  --t2:      #A0B898;
-  --t3:      #6A8A5E;
+  --gold-b:  #E8C870;
+  --gold-bg: rgba(201,163,74,.15);
+  --gold-bd: rgba(201,163,74,.40);
+  --green:   #5DC97C;
+  --grn-bg:  rgba(93,201,124,.13);
+  --grn-bd:  rgba(93,201,124,.38);
+  --red:     #E06060;
+  --red-bg:  rgba(224,96,96,.13);
+  --red-bd:  rgba(224,96,96,.38);
+  --yel:     #E0B020;
+  --yel-bg:  rgba(224,176,32,.13);
+  --yel-bd:  rgba(224,176,32,.38);
+  --t1:      #F5EDD0;
+  --t2:      #9ABCA0;
+  --t3:      #567A5A;
   --r:  14px;
   --rs: 10px;
+}
+[data-theme="light"]{
+  --bg:      #3A8C4A;
+  --s1:      #1A4022;
+  --s2:      #1E4A28;
+  --s3:      #24582F;
+  --s4:      #2C6838;
+  --bd:      rgba(255,255,255,.14);
+  --bd-hi:   rgba(255,255,255,.25);
+  --t1:      #FDF6E0;
+  --t2:      #B8D4BC;
+  --t3:      #72A078;
 }
 
 html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
   font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:15px;
-  line-height:1.5;overflow:hidden;overscroll-behavior:none}
+  line-height:1.5;overflow:hidden;overscroll-behavior:none;
+  background-image:
+    repeating-linear-gradient(45deg,rgba(0,0,0,.04) 0,rgba(0,0,0,.04) 1px,transparent 1px,transparent 9px),
+    repeating-linear-gradient(-45deg,rgba(0,0,0,.04) 0,rgba(0,0,0,.04) 1px,transparent 1px,transparent 9px),
+    radial-gradient(ellipse 110% 60% at 50% 0%,rgba(255,255,255,.06),transparent);
+  transition:background-color .3s}
 
 /* ── AUTH ─────────────────────────────────────────────── */
 #auth{position:fixed;inset:0;z-index:100;display:flex;align-items:center;
@@ -133,7 +150,8 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 
 /* ── SHARED CARD ──────────────────────────────────────── */
 .card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
-  margin-bottom:10px;overflow:hidden;animation:popIn .18s ease both}
+  margin-bottom:10px;overflow:hidden;animation:popIn .18s ease both;
+  box-shadow:0 4px 20px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06) inset}
 .ch{padding:11px 14px;border-bottom:1px solid var(--bd);
   display:flex;align-items:center;justify-content:space-between;gap:10px}
 .cb{padding:13px 14px}
@@ -349,6 +367,23 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 .straf-detail-txt{flex:1;font-size:.78rem;color:var(--t2)}
 .straf-detail-amt{font-size:.8rem;font-weight:700;color:var(--yel);white-space:nowrap}
 
+/* ── WEISHEIT ─────────────────────────────────────────── */
+.wisdom{background:linear-gradient(135deg,rgba(201,163,74,.12),rgba(201,163,74,.05));
+  border:1px solid var(--gold-bd);border-radius:var(--r);padding:11px 14px;
+  margin-bottom:13px;display:flex;align-items:flex-start;gap:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.wisdom-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.wisdom-txt{font-size:.82rem;color:var(--t2);line-height:1.5;flex:1;font-style:italic}
+.wisdom-src{font-size:.69rem;color:var(--t3);margin-top:4px}
+
+/* ── WHATSAPP ─────────────────────────────────────────── */
+.btn-wa{width:100%;padding:11px;background:rgba(37,211,102,.14);
+  border:1.5px solid rgba(37,211,102,.35);border-radius:var(--rs);
+  color:#4ADE80;font-size:.86rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .15s,border-color .15s;margin-bottom:10px}
+.btn-wa:hover{background:rgba(37,211,102,.22);border-color:rgba(37,211,102,.5)}
+
 /* ── SCHNELLSTRAFE ────────────────────────────────────── */
 .schnell-list{display:flex;flex-direction:column;gap:6px}
 .schnell-regel{width:100%;display:flex;align-items:center;justify-content:space-between;
@@ -408,6 +443,7 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
     </div>
     <div class="tb-right">
       <div id="sync-dot" title="Cloud-Sync" style="width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;margin-right:2px;transition:background .4s"></div>
+      <button class="admin-btn" id="theme-btn" title="Hell/Dunkel">☀</button>
       <button class="admin-btn" id="admin-btn" style="display:none" title="Admin-Panel">⚙</button>
       <div class="u-pill" id="u-pill">
         <div class="u-av" id="u-av">?</div>
@@ -713,7 +749,8 @@ function vTermine(){
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Noch keine Termine.<br>Schlag den ersten vor!</p></div>';
 
-  return`<div class="me-bar">
+  return`${vWeisheit()}
+  <div class="me-bar">
     <div class="u-av">${esc(ini(ME))}</div>
     Du stimmst als <strong>${esc(ME)}</strong> ab · Dein Name ist goldfarben markiert
   </div>
@@ -778,10 +815,15 @@ function vKasse(){
     <div class="k-amt ${cls}">${bal>=0?'+':''}${euro(bal)}</div>
     <div class="k-sub">${DB.kasse.length} Buchungen</div>
   </div>
-  <button class="btn-outline" id="btn-buch" style="margin-bottom:15px">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Buchung eintragen
-  </button>
+  <div style="display:flex;gap:8px;margin-bottom:15px">
+    <button class="btn-outline" id="btn-buch" style="flex:1">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Buchung eintragen
+    </button>
+    <button class="btn-wa" id="btn-wa" style="flex:1;margin-bottom:0">
+      📲 WhatsApp teilen
+    </button>
+  </div>
   <div class="sec">Buchungshistorie</div>
   ${rows||'<div class="empty"><div class="empty-i">💶</div><p class="empty-t">Noch keine Buchungen.</p></div>'}`;
 }
@@ -1293,6 +1335,7 @@ function bindContent(){
     b.onclick=()=>mStrafe(b.dataset.strafPlayer);
   });
   document.getElementById('btn-buch')?.addEventListener('click',mBuchung);
+  document.getElementById('btn-wa')?.addEventListener('click',waExportKasse);
   document.querySelectorAll('[data-edit-buch]').forEach(b=>{
     b.onclick=()=>{const buch=DB.kasse.find(x=>x.id===+b.dataset.editBuch);if(buch)mBuchungEdit(buch);};
   });
@@ -1345,6 +1388,75 @@ function bindContent(){
   document.querySelectorAll('[data-del-event]').forEach(b=>{
     b.onclick=()=>{DB.veranstaltungen=DB.veranstaltungen.filter(x=>x.id!==+b.dataset.delEvent);saveDB();render();};
   });
+}
+
+// ══ THEME TOGGLE ══════════════════════════════════════════
+(function(){
+  const saved=localStorage.getItem('dk-theme')||'dark';
+  if(saved==='light') document.documentElement.setAttribute('data-theme','light');
+  document.getElementById('theme-btn').textContent=saved==='light'?'🌙':'☀';
+})();
+document.getElementById('theme-btn').onclick=function(){
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  if(isLight){
+    document.documentElement.removeAttribute('data-theme');
+    this.textContent='☀';localStorage.setItem('dk-theme','dark');
+  }else{
+    document.documentElement.setAttribute('data-theme','light');
+    this.textContent='🌙';localStorage.setItem('dk-theme','light');
+  }
+};
+
+// ══ WEISHEITEN ════════════════════════════════════════════
+const WEISHEITEN=[
+  {txt:'Wer mit Ass sticht, hat meistens recht — außer beim Doppelkopf.',src:'Alte Weisheit'},
+  {txt:'Beim Doppelkopf kennt man seine Freunde erst nach dem dritten Stich.',src:'Vereinsspruch'},
+  {txt:'Ein Solo ist kein Verbrechen — aber es fühlt sich manchmal so an.',src:'Erfahrener Spieler'},
+  {txt:'Wer Trumpf hat, soll spielen. Wer keinen hat, soll zählen.',src:'Regel des Hauses'},
+  {txt:'Hochzeit zu spielen ist Glück. Hochzeit zu gewinnen ist Können.',src:'Turnierweisheit'},
+  {txt:'Beim Karo-Ass scheiden sich die Geister — und die Partner.',src:'Vereinschronik'},
+  {txt:'Fehlfarbe anspielen ohne Not: die Mutter aller Fehler.',src:'Trainer-Spruch'},
+  {txt:'Wer schweigt, denkt nach. Wer beim Doppelkopf schweigt, hat meistens schlechte Karten.',src:'Spieltisch'},
+  {txt:'Ein guter Partner findet sich auch ohne Hochzeit.',src:'Optimist'},
+  {txt:'Drei Damen und ein König — das nennst du Blatt?',src:'Skeptiker'},
+  {txt:'Die Kasse lügt nicht. Die Karten manchmal schon.',src:'Kassenwart'},
+  {txt:'Pik-Solo ist für mutige Leute. Kreuz-Solo für wahnsinnige.',src:'Erfahrungsbericht'},
+];
+
+function vWeisheit(){
+  const idx=Math.floor(Math.abs(Math.sin(new Date().getDate()*7+new Date().getMonth()*31))*WEISHEITEN.length);
+  const w=WEISHEITEN[idx];
+  return`<div class="wisdom">
+    <div class="wisdom-icon">🃏</div>
+    <div>
+      <div class="wisdom-txt">"${esc(w.txt)}"</div>
+      <div class="wisdom-src">— ${esc(w.src)}</div>
+    </div>
+  </div>`;
+}
+
+// ══ WHATSAPP EXPORT ═══════════════════════════════════════
+function waExportKasse(){
+  const bal=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+  const totals={};
+  DB.users.forEach(u=>{totals[u.name]=0;});
+  DB.strafen.forEach(s=>{totals[s.player]=(totals[s.player]||0)+s.betrag;});
+  const strafLines=DB.users.filter(u=>(totals[u.name]||0)>0)
+    .sort((a,b)=>(totals[b.name]||0)-(totals[a.name]||0))
+    .map(u=>`  • ${u.name}: ${euro(totals[u.name])}`).join('\n');
+  const naechster=[...DB.termine].filter(t=>t.date>=new Date().toISOString().slice(0,10))
+    .sort((a,b)=>a.date<b.date?-1:1)[0];
+  const lines=[
+    '♣ *DoppelKopf Schulte* ♠','',
+    `💰 *Kassenstand:* ${bal>=0?'+':''}${euro(bal)}`,
+  ];
+  if(strafLines) lines.push('','💸 *Strafenkasse:*',strafLines);
+  if(naechster) lines.push('',`📅 *Nächster Termin:*`,`  ${fmtD(naechster.date)}, ${naechster.time} Uhr`,`  📍 ${naechster.ort}`);
+  lines.push('',`Stand: ${new Date().toLocaleDateString('de-DE')}`);
+  const text=lines.join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('✅ In Zwischenablage kopiert!\nJetzt in WhatsApp einfügen.');
+  }).catch(()=>alert(text));
 }
 
 // ══ INIT ══════════════════════════════════════════════════
