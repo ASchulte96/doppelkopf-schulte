@@ -540,6 +540,9 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
     <button class="tab" data-tab="events">
       <svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Events
     </button>
+    <button class="tab" data-tab="tisch">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>Tisch
+    </button>
   </div>
 </div>
 <button class="fab" id="fab" hidden>+</button>
@@ -759,6 +762,7 @@ function render(){
     else if(DB.tab==='statistik') c.innerHTML=vStatistik();
     else if(DB.tab==='events')    c.innerHTML=vEvents();
     else if(DB.tab==='regeln')    c.innerHTML=vRegeln();
+    else if(DB.tab==='tisch')     c.innerHTML=vTisch();
     else c.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p class="empty-t">Unbekannter Tab: "${DB.tab}"</p></div>`;
   }catch(e){
     c.innerHTML=`<div style="padding:20px;color:var(--red);font-size:.8rem;word-break:break-all">
@@ -822,7 +826,6 @@ function vTermine(){
   }).join('')||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Noch keine Termine.<br>Schlag den ersten vor!</p></div>';
 
   return`${vWeisheit()}
-  <button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
   <div class="me-bar">
     <div class="u-av">${esc(ini(ME))}</div>
     Du stimmst als <strong>${esc(ME)}</strong> ab · Dein Name ist goldfarben markiert
@@ -992,6 +995,36 @@ function vPairingStats(){
     <div class="stat-head">🤝 Tisch-Partner <span style="font-weight:400;color:var(--t3);font-size:.72rem;margin-left:6px">${total} Abend${total!==1?'e':''} gespeichert</span></div>
     ${rows}
   </div>`;
+}
+
+// ══ TISCH ════════════════════════════════════════════════
+function vTisch(){
+  const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date));
+  const histRows=history.map(s=>{
+    const half=Math.ceil(s.seats.length/2);
+    const t1=s.seats.slice(0,half).join(', ');
+    const t2=s.seats.slice(half).join(', ');
+    return`<div class="b-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.72rem;color:var(--t3)">${fmtS(s.date)}</span>
+        ${meIsAdmin()?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--s3);border-radius:var(--rs);padding:7px 10px">
+          <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Tisch 1</div>
+          <div style="font-size:.82rem;color:var(--t1)">${esc(t1)}</div>
+        </div>
+        <div style="background:var(--s3);border-radius:var(--rs);padding:7px 10px">
+          <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Tisch 2</div>
+          <div style="font-size:.82rem;color:var(--t1)">${esc(t2)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`<button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
+  <div class="sec">Gespeicherte Abende</div>
+  ${histRows||'<div class="empty"><div class="empty-i">🎲</div><p class="empty-t">Noch keine Sitzordnungen gespeichert.<br>Würfle und speichere den ersten Abend!</p></div>'}`;
 }
 
 // ══ EVENTS ═══════════════════════════════════════════════
@@ -1422,6 +1455,7 @@ function bindContent(){
     if(DB.tab==='kasse')     mBuchung();
     if(DB.tab==='statistik') mEreignis();
     if(DB.tab==='events')    mEvent();
+    if(DB.tab==='tisch')     mSitzordnung();
     if(DB.tab==='regeln')    mRegel(null, DB.kategorien[0]?.name);
   };
   document.querySelectorAll('[data-vote]').forEach(b=>{
@@ -1437,6 +1471,9 @@ function bindContent(){
     b.onclick=()=>mStrafe(b.dataset.strafPlayer);
   });
   document.getElementById('btn-sitz')?.addEventListener('click',mSitzordnung);
+  document.querySelectorAll('[data-del-sitz]').forEach(b=>{
+    b.onclick=()=>{DB.sitzordnungen=DB.sitzordnungen.filter(x=>x.id!==+b.dataset.delSitz);saveDB();render();};
+  });
   document.getElementById('btn-buch')?.addEventListener('click',mBuchung);
   document.getElementById('btn-wa')?.addEventListener('click',waExportKasse);
   document.querySelectorAll('[data-edit-buch]').forEach(b=>{
