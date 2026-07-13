@@ -54,6 +54,71 @@
   --t3:      #6A9870;
 }
 
+/* ── SAISONAL ─────────────────────────────────────────── */
+/* Frühling (März–Mai): frisches Hellgrün, helles Gold */
+[data-season="spring"]{
+  --bg:      #1A5828;
+  --s1:      #0D2212;
+  --s2:      #102815;
+  --s3:      #143019;
+  --s4:      #1A3C20;
+  --gold:    #C8A83C;
+  --gold-b:  #E2C058;
+  --gold-bg: rgba(200,168,60,.14);
+  --gold-bd: rgba(200,168,60,.38);
+  --t2:      #9EC4A4;
+  --t3:      #52784C;
+}
+/* Sommer (Juni–Aug): sattteres Grün, leuchtendes Gold */
+[data-season="summer"]{
+  --bg:      #1D6030;
+  --s1:      #0E2614;
+  --s2:      #112D17;
+  --s3:      #15361C;
+  --s4:      #1C4224;
+  --gold:    #D4A830;
+  --gold-b:  #F0C840;
+  --gold-bg: rgba(212,168,48,.14);
+  --gold-bd: rgba(212,168,48,.4);
+}
+/* Herbst (Sep–Nov): Bernstein statt Gold, tiefes Waldgrün */
+[data-season="autumn"]{
+  --bg:      #1A2810;
+  --s1:      #0C160A;
+  --s2:      #0F1C0C;
+  --s3:      #13220F;
+  --s4:      #182C14;
+  --gold:    #C07828;
+  --gold-b:  #D89040;
+  --gold-bg: rgba(192,120,40,.13);
+  --gold-bd: rgba(192,120,40,.38);
+  --burg:    #7A1210;
+  --burg-b:  #9C2018;
+  --burg-bg: rgba(122,18,16,.28);
+  --burg-bd: rgba(190,45,35,.48);
+  --t2:      #98A880;
+  --t3:      #5A6845;
+}
+/* Winter (Dez–Feb): Silber statt Gold, eisiges Dunkelgrün */
+[data-season="winter"]{
+  --bg:      #0E1E1A;
+  --s1:      #060E0C;
+  --s2:      #091210;
+  --s3:      #0C1814;
+  --s4:      #101E19;
+  --gold:    #8EAABB;
+  --gold-b:  #B0C8D8;
+  --gold-bg: rgba(142,170,187,.12);
+  --gold-bd: rgba(142,170,187,.32);
+  --burg:    #3C1028;
+  --burg-b:  #5C1A38;
+  --burg-bg: rgba(60,16,40,.28);
+  --burg-bd: rgba(100,30,70,.48);
+  --t1:      #EAF0F5;
+  --t2:      #8AAAB8;
+  --t3:      #466070;
+}
+
 html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
   font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:18px;
   line-height:1.5;overflow:hidden;overscroll-behavior:none;
@@ -524,6 +589,7 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
         <text x="60" y="27" font-size="13" fill="#c0392b" transform="rotate(9 60 27)"   text-anchor="middle" font-family="serif">♦</text>
       </svg>
       <span class="tb-name" style="color:var(--gold-b);font-family:Georgia,serif;letter-spacing:.06em">DoppelKopf Schulte</span>
+      <span id="season-icon" style="font-size:.9rem;opacity:.75;line-height:1"></span>
     </div>
     <div class="tb-right">
       <div id="sync-dot" title="Cloud-Sync" style="width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;margin-right:2px;transition:background .4s"></div>
@@ -1796,6 +1862,19 @@ function computePairings(){
   });
   return counts;
 }
+
+// ══ SAISON ════════════════════════════════════════════════
+(function(){
+  const m=new Date().getMonth();
+  let season,icon;
+  if(m>=2&&m<=4){season='spring';icon='🌱';}
+  else if(m>=5&&m<=7){season='summer';icon='☀️';}
+  else if(m>=8&&m<=10){season='autumn';icon='🍂';}
+  else{season='winter';icon='❄️';}
+  document.documentElement.setAttribute('data-season',season);
+  const el=document.getElementById('season-icon');
+  if(el) el.textContent=icon;
+})();
 
 // ══ THEME TOGGLE ══════════════════════════════════════════
 (function(){
