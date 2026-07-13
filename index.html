@@ -1795,7 +1795,34 @@ const WEISHEITEN=[
   {txt:'Pik-Solo ist für mutige Leute. Kreuz-Solo für wahnsinnige.',src:'Erfahrungsbericht'},
 ];
 
+const SPIELTAG_WEISHEITEN=[
+  {txt:'Heute Abend wird gespielt. Wer zu spät kommt, den bestraft die Tischordnung.',src:'Trainer-Spruch'},
+  {txt:'Karten mischen, Platz nehmen, Konzentration. Heute zählt jeder Stich.',src:'Spieltag'},
+  {txt:'Heute ist Spieltag. Lasst eure Ausreden zu Hause.',src:'Trainer-Spruch'},
+  {txt:'Heute Abend zeigt sich, wer unter Druck noch rechnen kann.',src:'Vereinsweisheit'},
+  {txt:'Spieltag! Wer heute schlechte Karten hat, hat sie sich gestern nicht gut genug vorgestellt.',src:'Optimist'},
+  {txt:'Heute gilt: Augen auf, Karten im Blick und den Partner nicht vergessen.',src:'Erfahrener Spieler'},
+  {txt:'Es ist Spieltag. Jetzt bloß keinen Fehler bei der Fehlfarbe.',src:'Trainer-Spruch'},
+  {txt:'Heute Abend gilt nur eine Regel: Trumpf ist Trumpf.',src:'Spieltag'},
+];
+
 function vWeisheit(){
+  const today=new Date().toISOString().slice(0,10);
+  const istSpieltag=DB.termine.some(t=>t.date===today);
+  if(istSpieltag){
+    const d=new Date();
+    const idx=Math.floor(Math.abs(Math.sin(d.getDate()*13+d.getMonth()*7))*SPIELTAG_WEISHEITEN.length);
+    const w=SPIELTAG_WEISHEITEN[idx];
+    return`<div class="wisdom" style="border-color:var(--gold-bd);background:linear-gradient(135deg,rgba(201,163,74,.14),rgba(201,163,74,.06))">
+      <div class="wisdom-icon">🎴</div>
+      <div>
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+          color:var(--gold);margin-bottom:4px">Heute ist Spieltag!</div>
+        <div class="wisdom-txt">"${esc(w.txt)}"</div>
+        <div class="wisdom-src">— ${esc(w.src)}</div>
+      </div>
+    </div>`;
+  }
   const idx=Math.floor(Math.abs(Math.sin(new Date().getDate()*7+new Date().getMonth()*31))*WEISHEITEN.length);
   const w=WEISHEITEN[idx];
   return`<div class="wisdom">
