@@ -1039,6 +1039,34 @@ function vPairingStats(){
 
 // ══ TISCH ════════════════════════════════════════════════
 function vTisch(){
+  const today=new Date().toISOString().slice(0,10);
+  const naechster=[...DB.termine].filter(t=>t.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
+  let hinweis='';
+  if(naechster){
+    const v=naechster.votes||{};
+    const ja=DB.users.filter(u=>v[u.name]==='ja');
+    const offen=DB.users.filter(u=>!v[u.name]);
+    if(ja.length<4){
+      const msg=encodeURIComponent(`Hey! 🃏 Beim nächsten Doppelkopf-Abend am ${fmtD(naechster.date)} haben erst ${ja.length} Person${ja.length!==1?'en':''} zugesagt. Bitte tragt eure Zusage in der App ein: https://aschulte96.github.io/doppelkopf-schulte/`);
+      hinweis=`<div style="background:linear-gradient(135deg,rgba(224,176,32,.15),rgba(224,176,32,.07));
+        border:1.5px solid var(--yel-bd);border-left:3px solid var(--yel);border-radius:var(--r);
+        padding:13px 14px;margin-bottom:13px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--yel);margin-bottom:5px">
+          ⚠ Nur ${ja.length} von ${DB.users.length} ${ja.length===1?'hat':'haben'} für ${fmtD(naechster.date)} zugesagt
+        </div>
+        <div style="font-size:.76rem;color:var(--t2);margin-bottom:10px">
+          ${offen.length?`Noch keine Antwort: ${offen.map(u=>u.name).join(', ')}`:'Alle haben abgestimmt.'}
+        </div>
+        <a href="https://wa.me/?text=${msg}" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:7px;
+          padding:9px;background:rgba(37,211,102,.14);border:1.5px solid rgba(37,211,102,.35);
+          border-radius:var(--rs);color:#4ADE80;font-size:.84rem;font-weight:700;
+          text-decoration:none">
+          📲 WhatsApp-Erinnerung senden
+        </a>
+      </div>`;
+    }
+  }
   const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date));
   const histRows=history.map(s=>{
     const half=Math.ceil(s.seats.length/2);
@@ -1062,7 +1090,7 @@ function vTisch(){
     </div>`;
   }).join('');
 
-  return`<button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
+  return`${hinweis}<button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
   <div class="sec">Gespeicherte Abende</div>
   ${histRows||'<div class="empty"><div class="empty-i">🎲</div><p class="empty-t">Noch keine Sitzordnungen gespeichert.<br>Würfle und speichere den ersten Abend!</p></div>'}`;
 }
