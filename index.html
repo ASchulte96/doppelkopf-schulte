@@ -377,6 +377,29 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 .straf-detail-txt{flex:1;font-size:.78rem;color:var(--t2)}
 .straf-detail-amt{font-size:.8rem;font-weight:700;color:var(--yel);white-space:nowrap}
 
+/* ── SITZORDNUNG ──────────────────────────────────────── */
+.tisch-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.tisch-slot{background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--r);
+  padding:13px 10px;text-align:center;transition:all .2s}
+.tisch-slot.filled{border-color:var(--gold-bd);background:var(--gold-bg)}
+.tisch-slot.rolling{border-color:var(--burg-bd);background:var(--burg-bg)}
+.tisch-num{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:5px}
+.tisch-slot.filled .tisch-num{color:var(--gold)}
+.tisch-av{width:36px;height:36px;border-radius:50%;background:var(--s4);
+  color:var(--t2);font-size:.8rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
+.tisch-slot.filled .tisch-av{background:var(--gold);color:var(--bg)}
+.tisch-nm{font-size:.88rem;font-weight:700;color:var(--t1);min-height:1.2em}
+.tisch-slot.rolling .tisch-nm{color:var(--t3);animation:roll .12s steps(1) infinite}
+@keyframes roll{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+.btn-sitz{width:100%;padding:12px;background:var(--burg-bg);border:1.5px solid var(--burg-bd);
+  border-radius:var(--rs);color:var(--t1);font-size:.9rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .15s;margin-bottom:13px}
+.btn-sitz:hover{background:rgba(107,21,32,.4)}
+.btn-sitz-spin{display:inline-block;animation:spin .5s linear infinite}
+
 /* ── WEISHEIT ─────────────────────────────────────────── */
 .wisdom{background:linear-gradient(135deg,rgba(107,21,32,.55),rgba(80,15,24,.4));
   border:1px solid var(--gold-bd);border-left:3px solid var(--gold);
@@ -795,6 +818,7 @@ function vTermine(){
   }).join('')||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Noch keine Termine.<br>Schlag den ersten vor!</p></div>';
 
   return`${vWeisheit()}
+  <button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
   <div class="me-bar">
     <div class="u-av">${esc(ini(ME))}</div>
     Du stimmst als <strong>${esc(ME)}</strong> ab · Dein Name ist goldfarben markiert
@@ -1379,6 +1403,7 @@ function bindContent(){
   document.querySelectorAll('[data-straf-player]').forEach(b=>{
     b.onclick=()=>mStrafe(b.dataset.strafPlayer);
   });
+  document.getElementById('btn-sitz')?.addEventListener('click',mSitzordnung);
   document.getElementById('btn-buch')?.addEventListener('click',mBuchung);
   document.getElementById('btn-wa')?.addEventListener('click',waExportKasse);
   document.querySelectorAll('[data-edit-buch]').forEach(b=>{
@@ -1433,6 +1458,57 @@ function bindContent(){
   document.querySelectorAll('[data-del-event]').forEach(b=>{
     b.onclick=()=>{DB.veranstaltungen=DB.veranstaltungen.filter(x=>x.id!==+b.dataset.delEvent);saveDB();render();};
   });
+}
+
+// ══ SITZORDNUNG ═══════════════════════════════════════════
+function mSitzordnung(){
+  const players=[...DB.users].map(u=>u.name);
+  if(players.length<2){alert('Mindestens 2 Spieler nötig.');return;}
+
+  function shuffle(arr){
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*49/7*(i+1))%(i+1);[a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  }
+
+  function slots(names,rolling){
+    return names.map((n,i)=>`
+      <div class="tisch-slot${rolling?' rolling':n?' filled':''}">
+        <div class="tisch-num">Platz ${i+1}</div>
+        <div class="tisch-av">${n?esc(ini(n)):'?'}</div>
+        <div class="tisch-nm">${esc(n||'…')}</div>
+      </div>`).join('');
+  }
+
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">🎲 Sitzordnung</div>
+    <div id="tisch-grid" class="tisch-wrap">${slots(players.map(()=>'?'),true)}</div>
+    <div class="sa">
+      <button class="s-cancel" id="mc">Schließen</button>
+      <button class="s-save" id="ms-neu">Neu würfeln 🎲</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+
+  function roll(){
+    const grid=document.getElementById('tisch-grid');
+    if(!grid)return;
+    // rolling phase: 18 schnelle frames
+    let frame=0;
+    const iv=setInterval(()=>{
+      const tmp=shuffle(players);
+      grid.innerHTML=slots(tmp,true);
+      if(++frame>=18){
+        clearInterval(iv);
+        // finale Sitzordnung
+        const final=shuffle(players);
+        grid.innerHTML=slots(final,false);
+      }
+    },80);
+  }
+
+  roll();
+  document.getElementById('ms-neu').onclick=roll;
 }
 
 // ══ THEME TOGGLE ══════════════════════════════════════════
