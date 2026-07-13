@@ -1492,7 +1492,27 @@ function bindContent(){
 
 // ══ SITZORDNUNG ═══════════════════════════════════════════
 function mSitzordnung(){
-  const players=[...DB.users].map(u=>u.name);
+  const today=new Date().toISOString().slice(0,10);
+  const naechster=[...DB.termine].filter(t=>t.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
+
+  let players, terminInfo='', terminId=null;
+  if(naechster){
+    const v=naechster.votes||{};
+    const ja=DB.users.filter(u=>v[u.name]==='ja').map(u=>u.name);
+    const maybe=DB.users.filter(u=>v[u.name]==='maybe').map(u=>u.name);
+    players=ja.length>=2?ja:[...ja,...maybe];
+    terminId=naechster.id;
+    terminInfo=`<div style="font-size:.75rem;color:var(--t2);text-align:center;margin-bottom:14px;padding:8px 12px;background:var(--s3);border-radius:var(--rs)">
+      📅 ${esc(fmtD(naechster.date))}<br>
+      <span style="color:var(--t3)">${players.length} Zusagen${ja.length<2&&maybe.length?` (inkl. Vielleicht)`:''}
+      ${players.length===0?'<br><span style="color:var(--yel)">⚠ Noch keine Zusagen — alle Spieler werden verwendet</span>':''}</span>
+    </div>`;
+    if(players.length<2) players=DB.users.map(u=>u.name);
+  }else{
+    players=DB.users.map(u=>u.name);
+    terminInfo=`<div style="font-size:.75rem;color:var(--t3);text-align:center;margin-bottom:14px">Kein Termin gefunden — alle Spieler</div>`;
+  }
+
   if(players.length<2){alert('Mindestens 2 Spieler nötig.');return;}
 
   function shuffle(arr){
@@ -1518,6 +1538,7 @@ function mSitzordnung(){
 
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">🎲 Sitzordnung</div>
+    ${terminInfo}
     <div id="tisch-grid" class="tisch-wrap">${slots(currentOrder,true)}</div>
     <div style="font-size:.72rem;color:var(--t3);text-align:center;margin-top:4px;margin-bottom:12px" id="sitz-hint">Würfelt…</div>
     <div class="sa">
