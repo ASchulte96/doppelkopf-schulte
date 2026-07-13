@@ -1553,7 +1553,22 @@ function mSitzordnung(){
     terminInfo=`<div style="font-size:.75rem;color:var(--t3);text-align:center;margin-bottom:14px">Kein Termin gefunden — alle Spieler</div>`;
   }
 
-  if(players.length<2){alert('Mindestens 2 Spieler nötig.');return;}
+  if(players.length<2){
+    openM(`<div class="sheet"><div class="s-drag"></div>
+      <div class="s-title">🎲 Sitzordnung</div>
+      ${terminInfo}
+      <div style="text-align:center;padding:20px 10px">
+        <div style="font-size:2rem;margin-bottom:10px">👤</div>
+        <div style="font-size:.9rem;color:var(--t2);line-height:1.6">
+          Noch zu wenige Zusagen für eine Sitzordnung.<br>
+          <span style="color:var(--t3);font-size:.8rem">Mindestens 2 Spieler müssen mit <strong style="color:var(--green)">Ja</strong> abstimmen.</span>
+        </div>
+      </div>
+      <button class="s-cancel" id="mc" style="width:100%;margin-top:8px">Schließen</button>
+    </div>`);
+    document.getElementById('mc').onclick=closeM;
+    return;
+  }
 
   function shuffle(arr){
     const a=[...arr];
