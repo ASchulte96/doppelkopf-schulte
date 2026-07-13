@@ -55,7 +55,7 @@
 }
 
 html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
-  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:15px;
+  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:17px;
   line-height:1.5;overflow:hidden;overscroll-behavior:none;
   background-image:
   transition:background-color .3s}
@@ -821,8 +821,12 @@ const strafExpanded=new Set();
 
 // ══ TERMINE ══════════════════════════════════════════════
 function vTermine(){
+  const today=new Date().toISOString().slice(0,10);
   const sorted=[...DB.termine].sort((a,b)=>a.date<b.date?-1:1);
-  const cards=sorted.map((t,i)=>{
+  const upcoming=sorted.filter(t=>t.date>=today);
+  const past=sorted.filter(t=>t.date<today).reverse();
+
+  function terminCard(t,i,isPast){
     const v=t.votes||{};
     let ja=0,may=0,nein=0;
     DB.users.forEach(u=>{if(v[u.name]==='ja')ja++;else if(v[u.name]==='maybe')may++;else if(v[u.name]==='nein')nein++;});
@@ -832,7 +836,7 @@ function vTermine(){
       return `<span class="vc ${s==='maybe'?'may':s}${u.name===ME?' me':''}">${esc(u.name)}${sym?' '+sym:''}</span>`;
     }).join('');
     const myV=v[ME]||'';
-    return`<div class="card">
+    return`<div class="card"${isPast?' style="opacity:.72"':''}>
       <div class="ch">
         <div>
           <div class="t-date">${esc(fmtD(t.date))}</div>
@@ -840,7 +844,8 @@ function vTermine(){
           ${t.addedBy?`<div class="t-by">von ${esc(t.addedBy)}</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          ${i===0?'<span class="badge b-next">Nächster</span>':''}
+          ${!isPast&&i===0?'<span class="badge b-next">Nächster</span>':''}
+          ${isPast?'<span class="badge" style="background:rgba(255,255,255,.07);color:var(--t3)">Vergangen</span>':''}
           ${meIsAdmin()?`<div style="display:flex;gap:5px">
             <button class="rg-act" data-edit-termin="${t.id}">✎</button>
             <button class="del-btn" data-del-termin="${t.id}">✕</button>
@@ -853,17 +858,29 @@ function vTermine(){
           <span class="tv may"><span class="tv-d"></span>${may} Vielleicht</span>
           <span class="tv nein"><span class="tv-d"></span>${nein} Nein</span>
         </div>
-        <div class="t-side">
+        ${isPast?`<div class="vgrid">${chips}</div>`:`<div class="t-side">
           <div class="vgrid">${chips}</div>
           <div class="vrow">
             <button class="vb${myV==='ja'?' ja':''}" data-vote="ja" data-tid="${t.id}">✓ Ja</button>
             <button class="vb${myV==='maybe'?' may':''}" data-vote="maybe" data-tid="${t.id}">~ Vielleicht</button>
             <button class="vb${myV==='nein'?' nein':''}" data-vote="nein" data-tid="${t.id}">✗ Nein</button>
           </div>
-        </div>
+        </div>`}
       </div>
     </div>`;
-  }).join('')||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Noch keine Termine.<br>Schlag den ersten vor!</p></div>';
+  }
+
+  const upcomingCards=upcoming.map((t,i)=>terminCard(t,i,false)).join('')
+    ||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Keine kommenden Termine.<br>Schlag den ersten vor!</p></div>';
+
+  const histSection=past.length?`
+    <details style="margin-top:4px">
+      <summary style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+        color:var(--t3);cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px">
+        <span style="font-size:.8rem">▸</span> Vergangene Termine (${past.length})
+      </summary>
+      <div style="margin-top:8px">${past.map((t,i)=>terminCard(t,i,true)).join('')}</div>
+    </details>`:'';
 
   return`${vWeisheit()}
   <div class="me-bar">
@@ -872,7 +889,8 @@ function vTermine(){
   </div>
   ${vStrafenSection()}
   <div class="sec">Kommende Termine</div>
-  ${cards}`;
+  ${upcomingCards}
+  ${histSection}`;
 }
 
 function vStrafenSection(){
