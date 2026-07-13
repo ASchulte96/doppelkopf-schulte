@@ -1514,6 +1514,7 @@ function mSitzordnung(){
   }
 
   let currentOrder=shuffle(players);
+  let rollTimer=null;
 
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">🎲 Sitzordnung</div>
@@ -1530,6 +1531,7 @@ function mSitzordnung(){
   document.getElementById('mc').onclick=closeM;
 
   function roll(){
+    if(rollTimer){clearInterval(rollTimer);rollTimer=null;}
     const grid=document.getElementById('tisch-grid');
     const hint=document.getElementById('sitz-hint');
     const saveBtn=document.getElementById('ms-save');
@@ -1537,11 +1539,11 @@ function mSitzordnung(){
     if(saveBtn) saveBtn.style.display='none';
     if(hint) hint.textContent='Würfelt…';
     let frame=0;
-    const iv=setInterval(()=>{
+    rollTimer=setInterval(()=>{
       const tmp=shuffle(players);
       grid.innerHTML=slots(tmp,true);
       if(++frame>=18){
-        clearInterval(iv);
+        clearInterval(rollTimer);rollTimer=null;
         currentOrder=shuffle(players);
         grid.innerHTML=slots(currentOrder,false);
         if(hint) hint.textContent='Sitzordnung für heute Abend';
