@@ -580,10 +580,36 @@ async function syncPull(){
     });
     const remote=raw;
     if((remote.version||0)>(DB.version||0)){
+      // Änderungen erkennen bevor DB überschrieben wird
+      const oldStrafIds=new Set((DB.strafen||[]).map(s=>s.id));
+      const oldVotes={};
+      (DB.termine||[]).forEach(t=>{ oldVotes[t.id]=JSON.stringify(t.votes||{}); });
+
       const tab=DB.tab;
       DB=remote; DB.tab=tab;
       localStorage.setItem(KEY,JSON.stringify(DB));
       if(document.getElementById('app')&&!document.getElementById('app').hidden) render();
+
+      // Benachrichtigungen für neue Einträge von anderen
+      if(ME){
+        // Neue Strafen
+        (DB.strafen||[]).filter(s=>!oldStrafIds.has(s.id)&&s.addedBy&&s.addedBy!==ME).forEach(s=>{
+          notify('💸 Neue Strafe eingetragen',`${s.addedBy} hat ${s.player} eine Strafe eingetragen: ${s.grund} (${euro(s.betrag)})`);
+        });
+        // Neue Abstimmungen
+        (DB.termine||[]).forEach(t=>{
+          const newV=JSON.stringify(t.votes||{});
+          if(oldVotes[t.id]!==undefined&&oldVotes[t.id]!==newV){
+            const changed=Object.entries(t.votes||{}).find(([name,val])=>{
+              try{return JSON.parse(oldVotes[t.id])[name]!==val&&name!==ME;}catch{return false;}
+            });
+            if(changed){
+              const label=changed[1]==='ja'?'✓ Ja':changed[1]==='maybe'?'~ Vielleicht':'✗ Nein';
+              notify('📅 Neue Abstimmung',`${changed[0]}: ${label} für ${fmtD(t.date)}`);
+            }
+          }
+        });
+      }
     }
     setSyncDot(true);
   }catch(e){setSyncDot(false);}
@@ -750,6 +776,20 @@ function startApp(){
   document.getElementById('admin-btn').onclick=openAdminPanel;
   render();
   startSync();
+  requestNotifPermission();
+}
+
+function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+}
+
+function notify(title,body){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  if(document.visibilityState==='visible')return; // App ist offen → keine Benachrichtigung nötig
+  try{new Notification(title,{body,icon:'https://aschulte96.github.io/doppelkopf-schulte/favicon.ico'});}catch(e){}
 }
 
 function render(){
