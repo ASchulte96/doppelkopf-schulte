@@ -378,24 +378,37 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 .straf-detail-amt{font-size:.8rem;font-weight:700;color:var(--yel);white-space:nowrap}
 
 /* ── SITZORDNUNG ──────────────────────────────────────── */
-.tisch-wrap{display:grid;gap:10px;margin:16px 0}
-.tisch-col{background:var(--s2);border:1.5px solid var(--bd);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
-.tisch-col.filled{border-color:var(--gold-bd)}
-.tisch-col.rolling{border-color:var(--burg-bd)}
-.tisch-head{padding:9px 13px;display:flex;align-items:center;gap:7px;
-  background:rgba(0,0,0,.2);border-bottom:1px solid var(--bd)}
-.tisch-col.filled .tisch-head{background:var(--gold-bg)}
-.tisch-col.rolling .tisch-head{background:var(--burg-bg)}
-.tisch-num{font-size:.8rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--t3);flex:1}
-.tisch-col.filled .tisch-num{color:var(--gold-b)}
-.tisch-player{display:flex;align-items:center;gap:9px;padding:8px 13px;border-top:1px solid var(--bd)}
-.tisch-av{width:28px;height:28px;border-radius:50%;background:var(--s4);
-  color:var(--t2);font-size:.68rem;font-weight:800;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.tisch-col.filled .tisch-av{background:var(--gold);color:var(--bg)}
-.tisch-nm{font-size:.88rem;font-weight:600;color:var(--t1)}
-.tisch-col.rolling .tisch-nm{color:var(--t3);animation:roll .12s steps(1) infinite}
+.dk-tables{display:flex;flex-direction:column;gap:28px;align-items:center;margin:14px 0}
+.dk-scene{display:flex;flex-direction:column;align-items:center;gap:8px}
+.dk-row{display:flex;gap:8px;justify-content:center}
+.dk-middle{display:flex;align-items:center;gap:8px}
+.dk-side{display:flex;flex-direction:column;gap:8px}
+.dk-felt{width:130px;height:88px;
+  background:linear-gradient(145deg,#1c6030 0%,#0f3318 100%);
+  border:2.5px solid rgba(201,163,74,.55);border-radius:18px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  box-shadow:0 6px 24px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
+.dk-felt-num{font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.dk-felt-icon{font-size:1.4rem;line-height:1}
+.dk-felt.rolling .dk-felt-icon{animation:roll .18s steps(1) infinite}
+.dk-seat{display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:var(--s1);border:1.5px solid var(--bd);border-radius:12px;
+  padding:7px 10px;min-width:72px;transition:all .25s}
+.dk-seat.filled{border-color:var(--gold-bd);background:var(--s2)}
+.dk-seat.rolling{opacity:.4}
+.dk-seat-av{width:32px;height:32px;border-radius:50%;background:var(--s4);
+  color:var(--t2);font-size:.75rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .25s}
+.dk-seat.filled .dk-seat-av{background:var(--gold);color:var(--bg)}
+.dk-seat-nm{font-size:.8rem;font-weight:600;color:var(--t1);text-align:center;
+  max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-seat.rolling .dk-seat-nm{color:var(--t3)}
+.dk-scene.compact .dk-felt{width:86px;height:58px}
+.dk-scene.compact .dk-felt-num{font-size:.6rem}
+.dk-scene.compact .dk-felt-icon{font-size:.95rem}
+.dk-scene.compact .dk-seat{min-width:52px;padding:4px 7px;border-radius:8px}
+.dk-scene.compact .dk-seat-av{width:22px;height:22px;font-size:.6rem}
+.dk-scene.compact .dk-seat-nm{font-size:.67rem;max-width:52px}
 @keyframes roll{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
 .btn-sitz{width:100%;padding:12px;background:var(--burg-bg);border:1.5px solid var(--burg-bd);
   border-radius:var(--rs);color:var(--t1);font-size:.9rem;font-weight:700;cursor:pointer;
@@ -1095,24 +1108,37 @@ function vTisch(){
     }
   }
   const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date));
+  function renderTableCompact(group,tableNum){
+    const seat=(n)=>`<div class="dk-seat filled">
+      <div class="dk-seat-av">${esc(ini(n))}</div>
+      <div class="dk-seat-nm">${esc(n)}</div>
+    </div>`;
+    const north=[],east=[],south=[],west=[];
+    const sides=[north,east,south,west];
+    group.forEach((n,i)=>sides[i%4].push(n));
+    return`<div class="dk-scene compact">
+      <div class="dk-row">${north.map(seat).join('')}</div>
+      <div class="dk-middle">
+        <div class="dk-side">${west.map(seat).join('')}</div>
+        <div class="dk-felt"><div class="dk-felt-num">Tisch ${tableNum}</div><div class="dk-felt-icon">🃏</div></div>
+        <div class="dk-side">${east.map(seat).join('')}</div>
+      </div>
+      <div class="dk-row">${south.map(seat).join('')}</div>
+    </div>`;
+  }
+
   const histRows=history.map(s=>{
     const half=Math.ceil(s.seats.length/2);
-    const t1=s.seats.slice(0,half).join(', ');
-    const t2=s.seats.slice(half).join(', ');
-    return`<div class="b-row" style="flex-direction:column;align-items:stretch;gap:6px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:.72rem;color:var(--t3)">${fmtS(s.date)}</span>
+    const t1=s.seats.slice(0,half);
+    const t2=s.seats.slice(half);
+    return`<div class="card" style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:.78rem;font-weight:700;color:var(--t2)">${fmtS(s.date)}</span>
         ${meIsAdmin()?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:var(--s3);border-radius:var(--rs);padding:7px 10px">
-          <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Tisch 1</div>
-          <div style="font-size:.82rem;color:var(--t1)">${esc(t1)}</div>
-        </div>
-        <div style="background:var(--s3);border-radius:var(--rs);padding:7px 10px">
-          <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Tisch 2</div>
-          <div style="font-size:.82rem;color:var(--t1)">${esc(t2)}</div>
-        </div>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+        ${renderTableCompact(t1,1)}
+        ${renderTableCompact(t2,2)}
       </div>
     </div>`;
   }).join('');
@@ -1674,23 +1700,32 @@ function mSitzordnung(){
     return a;
   }
 
+  function renderTable(group,tableNum,rolling,compact){
+    const seat=(n)=>`<div class="dk-seat${rolling?' rolling':' filled'}">
+      <div class="dk-seat-av">${rolling?'?':esc(ini(n))}</div>
+      <div class="dk-seat-nm">${rolling?'…':esc(n)}</div>
+    </div>`;
+    const north=[],east=[],south=[],west=[];
+    const sides=[north,east,south,west];
+    group.forEach((n,i)=>sides[i%4].push(n));
+    return`<div class="dk-scene${compact?' compact':''}">
+      <div class="dk-row">${north.map(seat).join('')}</div>
+      <div class="dk-middle">
+        <div class="dk-side">${west.map(seat).join('')}</div>
+        <div class="dk-felt${rolling?' rolling':''}">
+          <div class="dk-felt-num">Tisch ${tableNum}</div>
+          <div class="dk-felt-icon">🃏</div>
+        </div>
+        <div class="dk-side">${east.map(seat).join('')}</div>
+      </div>
+      <div class="dk-row">${south.map(seat).join('')}</div>
+    </div>`;
+  }
+
   function slots(names,rolling){
     const half=Math.ceil(names.length/2);
     const tables=[names.slice(0,half),names.slice(half)];
-    const cols=numTables<=2?`1fr `.repeat(numTables).trim():`1fr 1fr`;
-    const cols_html=tables.map((group,t)=>`
-      <div class="tisch-col${rolling?' rolling':' filled'}">
-        <div class="tisch-head">
-          <span class="tisch-num">Tisch ${t+1}</span>
-          <span style="font-size:.68rem;color:var(--t3)">${group.length} Spieler</span>
-        </div>
-        ${group.map(n=>`
-          <div class="tisch-player">
-            <div class="tisch-av">${esc(ini(n))}</div>
-            <span class="tisch-nm">${esc(n)}</span>
-          </div>`).join('')}
-      </div>`).join('');
-    return`<div class="tisch-wrap" style="grid-template-columns:${cols}">${cols_html}</div>`;
+    return`<div class="dk-tables">${tables.map((g,t)=>renderTable(g,t+1,rolling,false)).join('')}</div>`;
   }
 
   let currentOrder=shuffle(players);
