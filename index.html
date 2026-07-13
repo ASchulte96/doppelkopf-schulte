@@ -545,7 +545,8 @@ function mkDB(){
 }
 
 let DB=loadDB(), ME=loadMe();
-// migrate: add kategorien if missing
+// Fehlende Felder auffüllen (alte localStorage-Daten)
+['strafen','ereignisse','termine','kasse','veranstaltungen','regeln','users'].forEach(f=>{if(!Array.isArray(DB[f]))DB[f]=[];});
 if(!DB.kategorien){
   DB.kategorien=[...new Set(DB.regeln.map(r=>r.kat))].map((name,i)=>({id:i+1,name}));
   saveDB();
