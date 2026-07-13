@@ -1042,7 +1042,16 @@ function vTisch(){
   const today=new Date().toISOString().slice(0,10);
   const naechster=[...DB.termine].filter(t=>t.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
   let hinweis='';
-  if(naechster){
+  if(!naechster){
+    hinweis=`<div style="background:linear-gradient(135deg,rgba(224,176,32,.15),rgba(224,176,32,.07));
+      border:1.5px solid var(--yel-bd);border-left:3px solid var(--yel);border-radius:var(--r);
+      padding:13px 14px;margin-bottom:13px">
+      <div style="font-size:.82rem;font-weight:700;color:var(--yel);margin-bottom:4px">
+        ⚠ Kein bevorstehender Termin geplant
+      </div>
+      <div style="font-size:.76rem;color:var(--t2)">Legt im Tab <strong>Termine</strong> den nächsten Spielabend fest.</div>
+    </div>`;
+  } else {
     const v=naechster.votes||{};
     const ja=DB.users.filter(u=>v[u.name]==='ja');
     const offen=DB.users.filter(u=>!v[u.name]);
