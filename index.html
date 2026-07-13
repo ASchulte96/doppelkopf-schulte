@@ -1527,7 +1527,7 @@ function mSitzordnung(){
   function slots(names,rolling){
     return names.map((n,i)=>`
       <div class="tisch-slot${rolling?' rolling':' filled'}">
-        <div class="tisch-num">Platz ${i+1}</div>
+        <div class="tisch-num">Tisch ${i+1}</div>
         <div class="tisch-av">${esc(ini(n))}</div>
         <div class="tisch-nm">${esc(n)}</div>
       </div>`).join('');
