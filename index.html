@@ -850,7 +850,7 @@ function startApp(){
   app.removeAttribute('hidden');
   document.getElementById('u-av').textContent=ini(ME);
   document.getElementById('u-nm').textContent=ME;
-  document.getElementById('u-pill').onclick=()=>{ME=null;saveMe(null);location.reload();};
+  document.getElementById('u-pill').onclick=()=>mProfil();
   document.getElementById('admin-btn').style.display=meIsAdmin()?'flex':'none';
   document.getElementById('admin-btn').onclick=openAdminPanel;
   render();
@@ -961,7 +961,7 @@ function vTermine(){
       <div style="margin-top:8px">${past.map((t,i)=>terminCard(t,i,true)).join('')}</div>
     </details>`:'';
 
-  return`${vWeisheit()}
+  return`${vWeisheit()}${vHoroskop()}
   <div class="me-bar">
     <div class="u-av">${esc(ini(ME))}</div>
     Du stimmst als <strong>${esc(ME)}</strong> ab · Dein Name ist goldfarben markiert
@@ -1946,6 +1946,124 @@ function vWeisheit(){
       <div class="wisdom-src">— ${esc(w.src)}</div>
     </div>
   </div>`;
+}
+
+// ══ HOROSKOP ══════════════════════════════════════════════
+const HOROSKOP={
+  'Widder':    {sym:'♈',d:'21.3–19.4', tips:['Dein Mut wird belohnt — spiel das Solo wenn die Karten stimmen.','Impulsive Züge kosten heute Punkte. Erst denken, dann stechen.','Kein zweites Ass auf fremden Trumpf — die Sterne warnen dich.','Du bist der natürliche Anführer am Tisch. Zeig es.']},
+  'Stier':     {sym:'♉',d:'20.4–20.5', tips:['Geduld ist heute dein größter Trumpf. Warte auf den richtigen Moment.','Halte deine Fehlfarben zurück — der Stier kennt seine Stärken.','Heute ist kein Tag für Experimente. Spiel sicher.','Deine Hartnäckigkeit gewinnt den letzten Stich.']},
+  'Zwillinge': {sym:'♊',d:'21.5–20.6', tips:['Du wechselst heute den Partner so oft wie die Trumpfkarten.','Deine Wendigkeit macht dich unberechenbar — nutze das.','Zwillinge spielen heute auf beiden Seiten. Hochzeit liegt in der Luft.','Kommuniziere durch deine Karten — dein Partner wird es verstehen.']},
+  'Krebs':     {sym:'♋',d:'21.6–22.7', tips:['Deine Intuition verrät dir heute wer der Partner ist.','Das Karo-Ass liegt in guten Händen — deinen.','Rückzug ist heute keine Schwäche sondern Strategie.','Vertraue deinem Bauchgefühl bei der Fehlfarbe.']},
+  'Löwe':      {sym:'♌',d:'23.7–22.8', tips:['Heute ist dein Abend für ein Solo. Die Bühne gehört dir.','Du dominierst den Tisch — aber pass auf, dass dein Partner mitkommt.','Kein Löwe verliert einen Trumpf ohne Gegenwehr.','Deine Ausstrahlung gewinnt heute mehr Stiche als deine Karten.']},
+  'Jungfrau':  {sym:'♍',d:'23.8–22.9', tips:['Deine Analyse ist perfekt — du weißt schon nach 3 Stichen wer was hat.','Fehlfarbe anspielen ohne Not ist heute dein Fehler. Lass es.','Vertraue deiner Berechnung — die Zahlen lügen nicht.','Disziplin gewinnt heute. Kein übereilter Stich.']},
+  'Waage':     {sym:'♎',d:'23.9–22.10',tips:['Deine Balance macht dich zum perfekten Partner heute.','Heute entscheidest du das Spiel mit einem einzigen klugen Stich.','Waage sucht immer den Ausgleich — auch in der Strafkasse.','Harmonisches Spiel mit dem Partner bringt heute den Sieg.']},
+  'Skorpion':  {sym:'♏',d:'23.10–21.11',tips:['Du durchschaust jeden am Tisch. Kontra kommt zum richtigen Zeitpunkt.','Deine Strategie ist heute unlesbar — perfekt.','Skorpione gewinnen nicht laut — sie stechen leise und präzise.','Das Karo-Ass ist heute in Gefahr. Hüte es gut.']},
+  'Schütze':   {sym:'♐',d:'22.11–21.12',tips:['Heute ist dein Tag für eine Hochzeit — Glück ist auf deiner Seite.','Dein Optimismus gewinnt heute den letzten Stich.','Schützen treffen auch mit schlechten Karten. Heute erst recht.','Spiel mutig — die Sterne haben ein Solo für dich vorgesehen.']},
+  'Steinbock': {sym:'♑',d:'22.12–19.1', tips:['Disziplin und Geduld — heute wirst du als letzter lachen.','Du zahlst keine Strafe heute. Die Sterne sind auf deiner Seite.','Kein unnötiger Trumpf. Der Steinbock kalkuliert jeden Stich.','Deine Erfahrung schlägt heute jedes Blatt.']},
+  'Wassermann':{sym:'♒',d:'20.1–18.2',  tips:['Dein unorthodoxer Zug heute verwirrt alle — und gewinnt.','Wassermänner erfinden heute eine neue Strategie am Tisch.','Dein Kreativität schlägt die Routine. Trau dich.','Die anderen rechnen nicht mit dir. Genau das ist dein Vorteil.']},
+  'Fische':    {sym:'♓',d:'19.2–20.3',  tips:['Konzentrier dich — die Karten sind heute besser als sie aussehen.','Deine Sensibilität spürt wo der Partner sitzt. Vertrau dem Gefühl.','Fische träumen heute von einem Solo. Vielleicht wird es wahr.','Nicht von schlechten Karten täuschen lassen — der letzte Stich gehört dir.']}
+};
+const SZ_LIST=Object.keys(HOROSKOP);
+
+function getSZKey(){return`dk-sz-${ME}`;}
+function getMySZ(){return localStorage.getItem(getSZKey())||'';}
+
+function vHoroskop(){
+  const sz=getMySZ();
+  if(!sz||!HOROSKOP[sz]) return '';
+  const h=HOROSKOP[sz];
+  const doy=Math.floor((new Date()-(new Date(new Date().getFullYear(),0,0)))/86400000);
+  const tip=h.tips[doy%h.tips.length];
+  return`<div class="wisdom" style="border-color:rgba(180,140,220,.4);background:linear-gradient(135deg,rgba(120,80,180,.15),rgba(80,40,140,.08))">
+    <div class="wisdom-icon">${h.sym}</div>
+    <div>
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+        color:#B89AE8;margin-bottom:4px">Dein Horoskop · ${esc(sz)}</div>
+      <div class="wisdom-txt">"${esc(tip)}"</div>
+      <div class="wisdom-src">— Doppelkopf-Sterne</div>
+    </div>
+  </div>`;
+}
+
+// ── Profil-Modal ───────────────────────────────────────────
+function mProfil(){
+  const sz=getMySZ();
+  const notifSupported='Notification' in window;
+  const notifPerm=notifSupported?Notification.permission:'unsupported';
+  const szOptions=SZ_LIST.map(s=>`<option value="${s}"${s===sz?' selected':''}>${HOROSKOP[s].sym} ${s} (${HOROSKOP[s].d})</option>`).join('');
+
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">👤 Mein Profil</div>
+    <div class="fld">
+      <label>Angemeldet als</label>
+      <div style="padding:10px 13px;background:var(--s3);border-radius:var(--rs);font-weight:700;color:var(--gold-b)">${esc(ME)}</div>
+    </div>
+    <div class="fld">
+      <label>Mein Sternzeichen</label>
+      <select id="sz-sel" style="width:100%;padding:11px 13px;background:var(--s3);border:1.5px solid var(--bd);
+        border-radius:var(--rs);color:var(--t1);font-size:1rem;font-family:inherit;outline:none">
+        <option value="">— kein Horoskop —</option>
+        ${szOptions}
+      </select>
+    </div>
+    ${notifSupported?`<div class="fld">
+      <label>Spieltag-Erinnerung</label>
+      <div style="font-size:.82rem;color:var(--t2);margin-bottom:8px">
+        ${notifPerm==='granted'?'✅ Benachrichtigungen aktiv — du wirst am Spieltag erinnert.'
+          :notifPerm==='denied'?'❌ Benachrichtigungen blockiert — bitte in den Browser-Einstellungen freigeben.'
+          :'Erhalte eine Push-Benachrichtigung wenn der nächste Spielabend beginnt.'}
+      </div>
+      ${notifPerm!=='granted'&&notifPerm!=='denied'?`<button class="btn-outline" id="notif-req">🔔 Benachrichtigungen erlauben</button>`:''}
+    </div>`:''}
+    <div class="sa" style="margin-top:4px">
+      <button class="s-cancel" id="profil-close">Schließen</button>
+      <button class="s-save" id="profil-save">Speichern</button>
+    </div>
+    <button class="btn-outline" id="profil-logout"
+      style="margin-top:8px;border-color:var(--red-bd);color:var(--red)">↩ Abmelden</button>
+  </div>`);
+
+  document.getElementById('profil-close').onclick=closeM;
+  document.getElementById('profil-logout').onclick=()=>{ME=null;saveMe(null);location.reload();};
+  document.getElementById('notif-req')?.addEventListener('click',async()=>{
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){planSpieltag();render();}
+    closeM();setTimeout(mProfil,200);
+  });
+  document.getElementById('profil-save').onclick=()=>{
+    const sel=document.getElementById('sz-sel').value;
+    if(sel) localStorage.setItem(getSZKey(),sel);
+    else localStorage.removeItem(getSZKey());
+    closeM();render();
+  };
+}
+
+// ── Service Worker + Spieltag-Erinnerung ──────────────────
+async function planSpieltag(){
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  if(!('serviceWorker' in navigator)) return;
+  const reg=await navigator.serviceWorker.ready.catch(()=>null);
+  if(!reg) return;
+  const today=new Date().toISOString().slice(0,10);
+  const termin=DB.termine.find(t=>t.date===today);
+  if(!termin) return;
+  const [h,m]=(termin.time||'19:00').split(':').map(Number);
+  const fire=new Date();
+  fire.setHours(h-1,m,0,0);
+  const ms=fire-new Date();
+  if(ms<0) return;
+  reg.active?.postMessage({
+    type:'PLAN_REMINDER',
+    ms,
+    title:'🃏 Spielabend heute!',
+    body:`Um ${termin.time} Uhr geht es los — bist du dabei?`
+  });
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/doppelkopf-schulte/sw.js').then(()=>{
+    planSpieltag();
+  }).catch(()=>{});
 }
 
 // ══ WHATSAPP EXPORT ═══════════════════════════════════════
