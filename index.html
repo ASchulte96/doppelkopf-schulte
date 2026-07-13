@@ -455,8 +455,14 @@ async function syncPull(){
   try{
     const r=await fetch(FB_URL);
     if(!r.ok)return;
-    const remote=fbFix(await r.json());
-    if(remote&&(remote.version||0)>(DB.version||0)){
+    const raw=fbFix(await r.json());
+    if(!raw)return;
+    // Firebase speichert leere Arrays als null → zurücksetzen
+    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln'].forEach(f=>{
+      if(!Array.isArray(raw[f]))raw[f]=raw[f]?Object.values(raw[f]):[];
+    });
+    const remote=raw;
+    if((remote.version||0)>(DB.version||0)){
       const tab=DB.tab;
       DB=remote; DB.tab=tab;
       localStorage.setItem(KEY,JSON.stringify(DB));
