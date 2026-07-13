@@ -664,6 +664,9 @@ function render(){
   bindContent();
 }
 
+// ══ STRAFEN EXPAND STATE ═════════════════════════════════
+const strafExpanded=new Set();
+
 // ══ TERMINE ══════════════════════════════════════════════
 function vTermine(){
   const sorted=[...DB.termine].sort((a,b)=>a.date<b.date?-1:1);
@@ -727,6 +730,7 @@ function vStrafenSection(){
   const total=sorted.reduce((s,p)=>s+p.amt,0);
   const rows=sorted.map(p=>{
     const einzel=DB.strafen.filter(s=>s.player===p.name).sort((a,b)=>b.date.localeCompare(a.date));
+    const open=strafExpanded.has(p.name);
     const details=einzel.map(s=>`
       <div class="straf-detail">
         <span class="straf-detail-date">${fmtS(s.date)}</span>
@@ -738,8 +742,9 @@ function vStrafenSection(){
       <div class="straf-av">${esc(ini(p.name))}</div>
       <span class="straf-name">${esc(p.name)}</span>
       <span class="straf-amt ${p.amt>0?'has':'zero'}">${euro(p.amt)}</span>
+      ${einzel.length?`<button class="rg-act" data-toggle-straf="${esc(p.name)}" style="font-size:.7rem">${open?'▲':'▼'} ${einzel.length}</button>`:''}
       <button class="btn-plus" data-straf-player="${esc(p.name)}" title="Strafe eintragen">+</button>
-      ${einzel.length?`<div class="straf-details">${details}</div>`:''}
+      ${einzel.length&&open?`<div class="straf-details">${details}</div>`:''}
     </div>`;
   }).join('');
   return`<div class="straf-card">
@@ -1295,6 +1300,14 @@ function bindContent(){
     b.onclick=()=>{DB.kasse=DB.kasse.filter(x=>x.id!==+b.dataset.delBuch);recalcBalances();saveDB();render();};
   });
   document.getElementById('btn-add-kat')?.addEventListener('click',()=>mKategorie(null));
+  document.querySelectorAll('[data-toggle-straf]').forEach(b=>{
+    b.onclick=e=>{
+      e.stopPropagation();
+      const name=b.dataset.toggleStraf;
+      strafExpanded.has(name)?strafExpanded.delete(name):strafExpanded.add(name);
+      render();
+    };
+  });
   document.querySelectorAll('[data-del-strafe]').forEach(b=>{
     b.onclick=()=>{
       const s=DB.strafen.find(x=>x.id===+b.dataset.delStrafe);
