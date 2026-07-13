@@ -1,0 +1,1282 @@
+
+<title>DoppelKopf Schulte</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+@keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes sheetUp { from{opacity:0;transform:translateY(100%)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin    { to{transform:rotate(360deg)} }
+@keyframes popIn   { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+:root{
+  --bg:      #172811;
+  --s1:      #1E3314;
+  --s2:      #243D18;
+  --s3:      #2F5120;
+  --s4:      #3A6B2A;
+  --bd:      rgba(255,255,255,.09);
+  --bd-hi:   rgba(255,255,255,.16);
+  --gold:    #C9A34A;
+  --gold-b:  #E2BF6C;
+  --gold-bg: rgba(201,163,74,.13);
+  --gold-bd: rgba(201,163,74,.35);
+  --green:   #4CAF72;
+  --grn-bg:  rgba(76,175,114,.15);
+  --grn-bd:  rgba(76,175,114,.4);
+  --red:     #C45A5A;
+  --red-bg:  rgba(196,90,90,.15);
+  --red-bd:  rgba(196,90,90,.4);
+  --yel:     #D4A017;
+  --yel-bg:  rgba(212,160,23,.15);
+  --yel-bd:  rgba(212,160,23,.4);
+  --t1:      #F0E8CC;
+  --t2:      #A0B898;
+  --t3:      #6A8A5E;
+  --r:  14px;
+  --rs: 10px;
+}
+
+html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
+  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:15px;
+  line-height:1.5;overflow:hidden;overscroll-behavior:none}
+
+/* ── AUTH ─────────────────────────────────────────────── */
+#auth{position:fixed;inset:0;z-index:100;display:flex;align-items:center;
+  justify-content:center;padding:20px;background:var(--bg);
+  background-image:radial-gradient(ellipse 80% 45% at 50% -5%,rgba(201,163,74,.13),transparent);
+  overflow-y:auto}
+#auth.gone{display:none}
+
+.aw{width:100%;max-width:370px;animation:fadeUp .4s cubic-bezier(.22,.68,0,1.2) both}
+.a-brand{text-align:center;margin-bottom:28px}
+.a-suits{font-size:1.4rem;letter-spacing:.2em;color:var(--gold);margin-bottom:8px}
+.a-title{font-size:1.9rem;font-weight:800;letter-spacing:-.03em;color:var(--t1)}
+.a-sub{font-size:.8rem;color:var(--t3);margin-top:3px}
+
+.a-card{background:var(--s1);border:1.5px solid var(--bd-hi);border-radius:18px;
+  padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+
+.a-tabs{display:flex;gap:4px;background:var(--s3);border-radius:var(--rs);padding:4px;margin-bottom:20px}
+.a-tab{flex:1;padding:8px;background:none;border:none;border-radius:8px;
+  color:var(--t3);font-size:.84rem;font-weight:600;cursor:pointer;transition:all .18s}
+.a-tab.on{background:var(--s1);color:var(--t1);box-shadow:0 1px 5px rgba(0,0,0,.35)}
+
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.fld-w{position:relative}
+.fld input{width:100%;padding:11px 13px;background:var(--s3);border:1.5px solid var(--bd);
+  border-radius:var(--rs);color:var(--t1);font-size:.9rem;font-family:inherit;
+  outline:none;transition:border-color .15s}
+.fld input:focus{border-color:var(--gold-bd)}
+.fld input::placeholder{color:var(--t3)}
+.pw-eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--t3);font-size:.85rem;padding:3px}
+
+.a-err{background:var(--red-bg);border:1.5px solid var(--red-bd);border-radius:8px;
+  padding:9px 12px;font-size:.8rem;color:var(--red);margin-bottom:12px;display:none}
+.a-err.show{display:block}
+
+.btn-a{width:100%;padding:13px;background:var(--gold);color:var(--bg);border:none;
+  border-radius:var(--rs);font-size:.92rem;font-weight:800;cursor:pointer;
+  transition:opacity .15s,transform .1s;display:flex;align-items:center;
+  justify-content:center;gap:8px;letter-spacing:.02em}
+.btn-a:active{transform:scale(.98)}
+.btn-a:disabled{opacity:.4;cursor:not-allowed}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(22,40,17,.3);
+  border-top-color:var(--bg);animation:spin .7s linear infinite;display:none}
+.loading .spin{display:block}
+.loading .a-txt{display:none}
+
+/* ── SHELL ────────────────────────────────────────────── */
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#app[hidden]{display:none}
+
+.topbar{flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--bd);
+  height:54px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tb-brand{display:flex;align-items:center;gap:8px}
+.tb-icon{width:28px;height:28px;border-radius:8px;background:var(--gold);
+  color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800}
+.tb-name{font-size:.98rem;font-weight:800;letter-spacing:-.02em;color:var(--t1)}
+.tb-right{display:flex;align-items:center;gap:6px}
+
+.u-pill{display:flex;align-items:center;gap:7px;background:var(--s2);
+  border:1px solid var(--bd-hi);border-radius:30px;padding:4px 11px 4px 5px;
+  cursor:pointer;transition:background .15s}
+.u-pill:hover{background:var(--s3)}
+.u-av{width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--bg);
+  font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.u-nm{font-size:.78rem;font-weight:700;color:var(--t1);max-width:80px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-exit{font-size:.65rem;color:var(--t3)}
+
+.admin-btn{width:30px;height:30px;border-radius:8px;background:var(--gold-bg);
+  border:1px solid var(--gold-bd);color:var(--gold-b);font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .15s;flex-shrink:0}
+.admin-btn:hover{background:rgba(201,163,74,.22)}
+
+.scroll{flex:1;overflow-y:auto;padding:14px 13px 78px}
+
+/* ── TABBAR ───────────────────────────────────────────── */
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:66px;background:var(--s1);
+  border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 4px;
+  padding-bottom:env(safe-area-inset-bottom,0)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;background:none;border:none;cursor:pointer;color:var(--t3);
+  font-size:.58rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:7px 2px;border-radius:var(--rs);transition:color .18s,background .18s}
+.tab.on{color:var(--gold);background:var(--gold-bg)}
+.tab svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── SHARED CARD ──────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  margin-bottom:10px;overflow:hidden;animation:popIn .18s ease both}
+.ch{padding:11px 14px;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cb{padding:13px 14px}
+.cht{font-size:.92rem;font-weight:700;color:var(--gold)}
+
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;
+  font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.b-next{background:var(--gold-bg);color:var(--gold-b);border:1px solid var(--gold-bd)}
+.b-green{background:var(--grn-bg);color:var(--green);border:1px solid var(--grn-bd)}
+.b-red  {background:var(--red-bg); color:var(--red);  border:1px solid var(--red-bd)}
+.b-yel  {background:var(--yel-bg); color:var(--yel);  border:1px solid var(--yel-bd)}
+.b-gold {background:var(--gold-bg);color:var(--gold-b);border:1px solid var(--gold-bd)}
+
+.sec{font-size:.67rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--t3);margin:18px 0 9px}
+.sec:first-child{margin-top:0}
+
+/* ── TERMINE ──────────────────────────────────────────── */
+.me-bar{display:flex;align-items:center;gap:9px;background:var(--gold-bg);
+  border:1px solid var(--gold-bd);border-radius:var(--rs);padding:9px 13px;
+  margin-bottom:13px;font-size:.8rem;color:var(--t2)}
+.me-bar strong{color:var(--gold-b)}
+
+.t-date{font-size:.98rem;font-weight:700;color:var(--t1)}
+.t-meta{font-size:.76rem;color:var(--t3);margin-top:2px}
+.t-by  {font-size:.7rem; color:var(--t3);margin-top:1px}
+
+.tally{display:flex;gap:11px;margin:9px 0}
+.tv{display:flex;align-items:center;gap:4px;font-size:.76rem;font-weight:700}
+.tv-d{width:7px;height:7px;border-radius:50%}
+.tv.ja   .tv-d{background:var(--green)}  .tv.ja   {color:var(--green)}
+.tv.may  .tv-d{background:var(--yel)}    .tv.may  {color:var(--yel)}
+.tv.nein .tv-d{background:var(--red)}    .tv.nein {color:var(--red)}
+
+.vgrid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px}
+.vc{padding:3px 8px;border-radius:20px;font-size:.73rem;font-weight:600;
+  background:var(--s2);color:var(--t3);border:1px solid var(--bd)}
+.vc.ja  {background:var(--grn-bg);color:var(--green);border-color:var(--grn-bd)}
+.vc.may {background:var(--yel-bg);color:var(--yel);  border-color:var(--yel-bd)}
+.vc.nein{background:var(--red-bg);color:var(--red);  border-color:var(--red-bd)}
+.vc.me  {box-shadow:0 0 0 1.5px var(--gold)}
+
+.vrow{display:flex;gap:6px}
+.vb{flex:1;padding:9px 5px;border-radius:var(--rs);border:1.5px solid var(--bd);
+  background:var(--s2);color:var(--t3);font-size:.78rem;font-weight:700;
+  cursor:pointer;text-align:center;transition:all .15s}
+.vb.ja  {border-color:var(--grn-bd);background:var(--grn-bg);color:var(--green)}
+.vb.may {border-color:var(--yel-bd);background:var(--yel-bg);color:var(--yel)}
+.vb.nein{border-color:var(--red-bd);background:var(--red-bg);color:var(--red)}
+
+/* side-by-side voting area */
+.t-side{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.t-side .vgrid{align-content:start}
+.t-side .vrow{display:flex;flex-direction:column;gap:5px;min-width:110px}
+.t-side .vrow .vb{padding:8px 6px;font-size:.75rem}
+
+/* ── STRAFENKASSE ─────────────────────────────────────── */
+.straf-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  margin-bottom:13px;overflow:hidden}
+.straf-head{background:rgba(0,0,0,.18);padding:11px 14px;display:flex;
+  align-items:center;justify-content:space-between}
+.straf-title{font-size:.88rem;font-weight:700;color:var(--gold);
+  display:flex;align-items:center;gap:7px}
+.straf-sum{font-size:.75rem;color:var(--t3)}
+.straf-row{display:flex;align-items:center;gap:10px;padding:9px 14px;
+  border-top:1px solid var(--bd)}
+.straf-av{width:28px;height:28px;border-radius:50%;background:var(--s3);
+  color:var(--t2);font-size:.68rem;font-weight:800;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.straf-name{flex:1;font-size:.85rem;font-weight:600}
+.straf-amt{font-size:.9rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.straf-amt.has{color:var(--yel)}
+.straf-amt.zero{color:var(--t3)}
+.btn-plus{width:26px;height:26px;border-radius:50%;background:var(--s3);
+  border:1px solid var(--bd-hi);color:var(--t2);font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .15s;flex-shrink:0}
+.btn-plus:hover{background:var(--gold-bg);color:var(--gold-b);border-color:var(--gold-bd)}
+
+/* ── FAB ──────────────────────────────────────────────── */
+.fab{position:fixed;bottom:78px;right:15px;width:48px;height:48px;border-radius:50%;
+  background:var(--gold);color:var(--bg);border:none;font-size:1.4rem;cursor:pointer;
+  box-shadow:0 5px 20px rgba(201,163,74,.4);display:flex;align-items:center;
+  justify-content:center;z-index:10;transition:transform .15s}
+.fab:active{transform:scale(.9)}
+.fab[hidden]{display:none}
+
+/* ── REGELN ───────────────────────────────────────────── */
+.rg-group{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  margin-bottom:10px;overflow:hidden;animation:popIn .18s ease both}
+.rg-grp-head{background:rgba(0,0,0,.22);padding:11px 14px;
+  display:flex;align-items:center;gap:8px}
+.rg-grp-name{font-size:.92rem;font-weight:800;color:var(--gold);flex:1;letter-spacing:-.01em}
+.rg-grp-count{font-size:.7rem;color:var(--t3);white-space:nowrap}
+.rg-act{background:none;border:1px solid var(--bd);border-radius:6px;color:var(--t3);
+  font-size:.78rem;padding:3px 8px;cursor:pointer;transition:all .14s;line-height:1.4;white-space:nowrap}
+.rg-act:hover{border-color:var(--gold-bd);color:var(--gold-b)}
+.rg-row{padding:10px 14px;border-top:1px solid var(--bd);
+  display:flex;align-items:center;gap:10px}
+.rg-txt{font-size:.86rem;flex:1;line-height:1.4}
+.rg-straf{font-size:.9rem;font-weight:800;color:var(--gold);white-space:nowrap}
+
+/* ── KASSE ────────────────────────────────────────────── */
+.k-hero{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  padding:20px 18px;text-align:center;margin-bottom:12px;position:relative;overflow:hidden}
+.k-hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at top,rgba(201,163,74,.07),transparent)}
+.k-lbl{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.11em;
+  color:var(--t3);margin-bottom:7px}
+.k-amt{font-size:2.8rem;font-weight:800;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;line-height:1}
+.k-amt.pos{color:var(--green)} .k-amt.neg{color:var(--red)} .k-amt.z{color:var(--t3)}
+.k-sub{font-size:.75rem;color:var(--t3);margin-top:7px}
+.b-row{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rs);
+  padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:11px}
+.b-date{font-size:.72rem;color:var(--t3);min-width:62px;flex-shrink:0}
+.b-info{flex:1;min-width:0}
+.b-desc{font-size:.86rem;font-weight:500}
+.b-by  {font-size:.7rem;color:var(--t3)}
+.b-amt {font-size:.92rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.b-amt.pos{color:var(--green)} .b-amt.neg{color:var(--red)}
+
+/* ── STATISTIK ────────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+.stat-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  overflow:hidden;animation:popIn .18s ease both}
+.stat-card.wide{grid-column:1/-1}
+.stat-head{background:rgba(0,0,0,.18);padding:10px 13px;font-size:.78rem;
+  font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px}
+.stat-row{display:flex;align-items:center;gap:9px;padding:8px 13px;
+  border-top:1px solid var(--bd)}
+.stat-med{font-size:1rem;min-width:22px;text-align:center}
+.stat-nm{flex:1;font-size:.83rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-val{font-size:.85rem;font-weight:800;color:var(--gold-b);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat-val.red{color:var(--red)}
+.stat-empty{padding:14px 13px;font-size:.78rem;color:var(--t3);text-align:center}
+
+/* ── EVENTS ───────────────────────────────────────────── */
+.ev{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  overflow:hidden;margin-bottom:10px;animation:popIn .18s ease both}
+.ev-stripe{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-b));opacity:.7}
+.ev-body{padding:14px}
+.ev-date{font-size:.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--gold);margin-bottom:4px}
+.ev-title{font-size:1rem;font-weight:800;letter-spacing:-.01em;margin-bottom:5px}
+.ev-desc{font-size:.83rem;color:var(--t2);line-height:1.5}
+.ev-ort{font-size:.73rem;color:var(--t3);margin-top:9px;display:flex;align-items:center;gap:4px}
+.ev-by {font-size:.7rem;color:var(--t3);margin-top:7px;padding-top:7px;border-top:1px solid var(--bd)}
+
+/* ── EMPTY ────────────────────────────────────────────── */
+.empty{text-align:center;padding:52px 18px;color:var(--t3)}
+.empty-i{font-size:2rem;margin-bottom:9px}
+.empty-t{font-size:.86rem;line-height:1.6}
+
+/* ── MODAL ────────────────────────────────────────────── */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
+.sheet{background:var(--s2);width:100%;max-width:480px;border-radius:18px 18px 0 0;
+  padding:15px 17px 32px;border-top:1.5px solid var(--bd-hi);
+  max-height:93vh;overflow-y:auto;box-shadow:0 -12px 50px rgba(0,0,0,.55);
+  animation:sheetUp .26s cubic-bezier(.32,.72,0,1)}
+.s-drag{width:34px;height:4px;background:var(--s4);border-radius:2px;margin:0 auto 16px}
+.s-title{font-size:1rem;font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:18px}
+.sf{margin-bottom:13px}
+.sf label{display:block;font-size:.67rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--t3);margin-bottom:6px}
+.sf input,.sf textarea,.sf select{width:100%;padding:10px 12px;background:var(--s3);
+  border:1.5px solid var(--bd);border-radius:var(--rs);color:var(--t1);
+  font-size:.88rem;font-family:inherit;outline:none;transition:border-color .15s}
+.sf input:focus,.sf textarea:focus,.sf select:focus{border-color:var(--gold-bd)}
+.sf input[readonly]{opacity:.5;cursor:default}
+.sf textarea{resize:vertical;min-height:75px}
+.sf select option{background:var(--s2)}
+.t-row{display:flex;gap:7px}
+.ttgl{flex:1;padding:10px;background:var(--s3);border:1.5px solid var(--bd);
+  border-radius:var(--rs);color:var(--t3);font-size:.83rem;font-weight:700;
+  cursor:pointer;text-align:center;transition:all .15s}
+.ttgl.ein{border-color:var(--grn-bd);background:var(--grn-bg);color:var(--green)}
+.ttgl.aus{border-color:var(--red-bd); background:var(--red-bg); color:var(--red)}
+.sa{display:flex;gap:8px;margin-top:5px}
+.s-cancel{flex:1;padding:12px;border-radius:var(--rs);border:none;
+  background:var(--s3);color:var(--t2);font-size:.88rem;font-weight:700;cursor:pointer}
+.s-save  {flex:2;padding:12px;border-radius:var(--rs);border:none;
+  background:var(--gold);color:var(--bg);font-size:.88rem;font-weight:800;cursor:pointer}
+
+.btn-outline{width:100%;padding:11px;background:none;border:1.5px solid var(--bd-hi);
+  border-radius:var(--rs);color:var(--t2);font-size:.86rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .15s,color .15s}
+.btn-outline:hover{border-color:var(--gold-bd);color:var(--gold-b)}
+
+/* admin panel */
+.admin-row{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-top:1px solid var(--bd)}
+.adm-info{flex:1;min-width:0}
+.adm-nm{font-size:.88rem;font-weight:600}
+.adm-role{font-size:.72rem;color:var(--t3);margin-top:1px}
+.adm-btn{padding:5px 11px;border-radius:20px;border:1.5px solid var(--bd);
+  background:var(--s3);color:var(--t2);font-size:.74rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;transition:all .15s}
+.adm-btn.grant{border-color:var(--gold-bd);color:var(--gold-b)}
+.adm-btn.revoke{border-color:var(--red-bd);color:var(--red)}
+
+.del-btn{background:none;border:none;color:var(--t3);font-size:.75rem;cursor:pointer;
+  padding:3px 6px;border-radius:5px;transition:color .12s,background .12s;flex-shrink:0}
+.del-btn:hover{color:var(--red);background:var(--red-bg)}
+
+/* ── SCHNELLSTRAFE ────────────────────────────────────── */
+.schnell-list{display:flex;flex-direction:column;gap:6px}
+.schnell-regel{width:100%;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:12px 14px;background:var(--s3);border:1.5px solid var(--bd);
+  border-radius:var(--rs);cursor:pointer;transition:all .15s;text-align:left}
+.schnell-regel:hover,.schnell-regel:active{border-color:var(--gold-bd);background:var(--gold-bg)}
+.sr-text{font-size:.86rem;color:var(--t1);flex:1;line-height:1.3}
+.sr-amt{font-size:.92rem;font-weight:800;color:var(--gold);white-space:nowrap;flex-shrink:0}
+</style>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="aw">
+    <div class="a-brand">
+      <div class="a-suits">♠ ♥ ♦ ♣</div>
+      <div class="a-title">DoppelKopf Schulte</div>
+      <div class="a-sub">Doppelkopf · Vereinsverwaltung</div>
+    </div>
+    <div class="a-card">
+      <div class="a-tabs">
+        <button class="a-tab on" data-at="login">Anmelden</button>
+        <button class="a-tab" data-at="register">Registrieren</button>
+      </div>
+      <div class="a-err" id="a-err"></div>
+      <div class="fld"><label>Name</label>
+        <input id="a-name" type="text" placeholder="Dein Name" autocomplete="username"/>
+      </div>
+      <div class="fld"><label>Passwort</label>
+        <div class="fld-w">
+          <input id="a-pw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pw-eye" id="pw-eye">👁</button>
+        </div>
+      </div>
+      <div class="fld" id="pw2w" style="display:none"><label>Passwort bestätigen</label>
+        <input id="a-pw2" type="password" placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      <div class="fld" id="stay-wrap">
+        <label style="flex-direction:row;display:flex;align-items:center;gap:9px;cursor:pointer;text-transform:none;font-size:.82rem;letter-spacing:0;color:var(--t2)">
+          <input type="checkbox" id="a-stay" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+          Angemeldet bleiben
+        </label>
+      </div>
+      <button class="btn-a" id="btn-a">
+        <div class="spin" id="a-spin"></div>
+        <span id="a-txt">Anmelden</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-icon">♣</div>
+      <span class="tb-name">DoppelKopf Schulte</span>
+    </div>
+    <div class="tb-right">
+      <div id="sync-dot" title="Cloud-Sync" style="width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;margin-right:2px;transition:background .4s"></div>
+      <button class="admin-btn" id="admin-btn" style="display:none" title="Admin-Panel">⚙</button>
+      <div class="u-pill" id="u-pill">
+        <div class="u-av" id="u-av">?</div>
+        <span class="u-nm" id="u-nm">–</span>
+        <span class="u-exit">↩</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll" id="content"></div>
+  <div class="tabbar">
+    <button class="tab on" data-tab="termine">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Termine
+    </button>
+    <button class="tab" data-tab="regeln">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>Regeln
+    </button>
+    <button class="tab" data-tab="kasse">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Kasse
+    </button>
+    <button class="tab" data-tab="statistik">
+      <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>Statistik
+    </button>
+    <button class="tab" data-tab="events">
+      <svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Events
+    </button>
+  </div>
+</div>
+<button class="fab" id="fab" hidden>+</button>
+<div id="modal"></div>
+
+<script>
+// ══ CLOUD SYNC ═══════════════════════════════════════════
+const FB_URL='https://doppelkopf-schulte-default-rtdb.europe-west1.firebasedatabase.app/db.json';
+let syncTimer=null, syncing=false;
+
+async function syncPush(dbData){
+  try{
+    await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dbData)});
+  }catch(e){}
+}
+
+async function syncPull(){
+  if(syncing)return; syncing=true;
+  try{
+    const r=await fetch(FB_URL);
+    if(!r.ok)return;
+    const remote=await r.json();
+    if(remote&&(remote.version||0)>(DB.version||0)){
+      const tab=DB.tab;
+      DB=remote; DB.tab=tab;
+      localStorage.setItem(KEY,JSON.stringify(DB));
+      if(document.getElementById('app')&&!document.getElementById('app').hidden) render();
+    }
+    setSyncDot(true);
+  }catch(e){setSyncDot(false);}
+  finally{syncing=false;}
+}
+
+function setSyncDot(ok){
+  const d=document.getElementById('sync-dot');
+  if(d) d.style.background=ok?'var(--green)':'var(--red)';
+}
+
+function startSync(){
+  syncPull();
+  syncTimer=setInterval(syncPull,5000);
+}
+
+// ══ CRYPTO ═══════════════════════════════════════════════
+const SALT='dk2026v4';
+async function hashPw(pw){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw+SALT));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ══ STORAGE ══════════════════════════════════════════════
+const KEY='dk4db',MEK='dk4me';
+function loadDB(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):mkDB();}catch(e){return mkDB();}}
+function saveDB(){
+  DB.version=(DB.version||0)+1;
+  try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+  syncPush(DB);
+}
+function loadMe(){try{return localStorage.getItem(MEK)||sessionStorage.getItem(MEK)||null;}catch(e){return null;}}
+function saveMe(v,stay){
+  try{
+    localStorage.removeItem(MEK);sessionStorage.removeItem(MEK);
+    if(!v)return;
+    if(stay)localStorage.setItem(MEK,v);else sessionStorage.setItem(MEK,v);
+  }catch(e){}
+}
+
+function mkDB(){
+  return{
+    users:[],tab:'termine',nextId:100,
+    termine:[
+      {id:1,date:'2026-07-11',time:'19:30',ort:'Gasthaus Krone',votes:{},addedBy:''},
+      {id:2,date:'2026-07-25',time:'19:30',ort:'Gasthaus Krone',votes:{},addedBy:''},
+      {id:3,date:'2026-08-08',time:'19:00',ort:'Gasthaus Krone',votes:{},addedBy:''},
+    ],
+    kasse:[
+      {id:1,date:'2026-06-13',desc:'Spielabend #1',type:'ein',betrag:18,balance:18,addedBy:''},
+      {id:2,date:'2026-06-13',desc:'Strafen Spielabend #1',type:'ein',betrag:3.5,balance:21.5,addedBy:''},
+      {id:3,date:'2026-06-13',desc:'Getränke',type:'aus',betrag:12,balance:9.5,addedBy:''},
+    ],
+    strafen:[],      // {id,date,player,grund,betrag,addedBy}
+    ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
+    veranstaltungen:[
+      {id:1,title:'Sommer-Turnier',date:'2026-08-22',ort:'Vereinsheim',desc:'Jährliches Sommer-Turnier mit Grillabend. Anmeldung bis 15. August.',addedBy:''},
+      {id:2,title:'Jahresabschluss',date:'2026-12-19',ort:'Gasthaus Krone',desc:'Feierlicher Jahresabschluss mit Siegerehrung und Kassenabschluss.',addedBy:''},
+    ],
+    kategorien:[
+      {id:1,name:'Erscheinen'},
+      {id:2,name:'Spiel'},
+      {id:3,name:'Verhalten'},
+    ],
+    regeln:[
+      {id:1,kat:'Erscheinen',text:'Nicht erscheinen ohne Absage',strafe:'2,00 €',betrag:2},
+      {id:2,kat:'Erscheinen',text:'Zu spät (mehr als 15 Minuten)',strafe:'0,50 €',betrag:.5},
+      {id:3,kat:'Erscheinen',text:'Absage kurzfristig (< 24 Std.)',strafe:'1,00 €',betrag:1},
+      {id:4,kat:'Spiel',text:'Verlorenes Solo',strafe:'1,00 €',betrag:1},
+      {id:5,kat:'Spiel',text:'Karten falsch ausgeteilt',strafe:'0,50 €',betrag:.5},
+      {id:6,kat:'Spiel',text:'Falsche Karte gespielt',strafe:'0,50 €',betrag:.5},
+      {id:7,kat:'Verhalten',text:'Handy klingeln lassen',strafe:'0,50 €',betrag:.5},
+      {id:8,kat:'Verhalten',text:'Spielstand kommentieren',strafe:'0,50 €',betrag:.5},
+    ],
+  };
+}
+
+let DB=loadDB(), ME=loadMe();
+// migrate: add kategorien if missing
+if(!DB.kategorien){
+  DB.kategorien=[...new Set(DB.regeln.map(r=>r.kat))].map((name,i)=>({id:i+1,name}));
+  saveDB();
+}
+
+// ══ HELPERS ══════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ini(n){return(n||'').trim().split(/\s+/).map(p=>p[0]||'').join('').toUpperCase().slice(0,2)||'?';}
+function fmtD(d){try{return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}catch(e){return d;}}
+function fmtS(d){try{return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){return d;}}
+function euro(n){return(+n||0).toFixed(2).replace('.',',')+' €';}
+function isAdmin(name){return DB.users.find(u=>u.name===name)?.isAdmin||false;}
+function meIsAdmin(){return isAdmin(ME);}
+
+// ══ AUTH ═════════════════════════════════════════════════
+let aMode='login';
+function initAuth(){
+  document.querySelectorAll('.a-tab').forEach(t=>{
+    t.onclick=()=>{
+      aMode=t.dataset.at;
+      document.querySelectorAll('.a-tab').forEach(x=>x.classList.toggle('on',x.dataset.at===aMode));
+      document.getElementById('pw2w').style.display=aMode==='register'?'block':'none';
+      document.getElementById('stay-wrap').style.display=aMode==='register'?'none':'block';
+      document.getElementById('a-txt').textContent=aMode==='register'?'Registrieren':'Anmelden';
+      document.getElementById('a-err').classList.remove('show');
+    };
+  });
+  document.getElementById('pw-eye').onclick=()=>{
+    const i=document.getElementById('a-pw');i.type=i.type==='password'?'text':'password';
+  };
+  document.getElementById('btn-a').onclick=doAuth;
+  ['a-name','a-pw','a-pw2'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();}));
+}
+function aErr(msg){const e=document.getElementById('a-err');e.textContent=msg;e.classList.add('show');}
+async function doAuth(){
+  const name=document.getElementById('a-name').value.trim();
+  const pw=document.getElementById('a-pw').value;
+  const pw2=document.getElementById('a-pw2').value;
+  const stay=document.getElementById('a-stay').checked;
+  document.getElementById('a-err').classList.remove('show');
+  if(!name){aErr('Bitte einen Namen eingeben.');return;}
+  if(!pw)  {aErr('Bitte ein Passwort eingeben.');return;}
+  const btn=document.getElementById('btn-a');
+  btn.disabled=true;document.getElementById('btn-a').parentElement||btn;
+  btn.classList.add('loading');  // Note: loading class on btn itself
+  // quick hack: show spinner
+  document.getElementById('a-spin').style.display='block';
+  document.getElementById('a-txt').style.display='none';
+  try{
+    const hash=await hashPw(pw);
+    if(aMode==='register'){
+      if(pw.length<4){aErr('Passwort mind. 4 Zeichen.');return;}
+      if(pw!==pw2){aErr('Passwörter stimmen nicht überein.');return;}
+      if(DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase())){aErr('Name bereits vergeben.');return;}
+      const isAlex=name.toLowerCase()==='alex';
+      const noAdmins=!DB.users.some(u=>u.isAdmin);
+      DB.users.push({name,hash,isAdmin:isAlex||noAdmins&&false});
+      if(isAlex) DB.users[DB.users.length-1].isAdmin=true;
+      saveDB();ME=name;saveMe(ME,true);startApp();
+    }else{
+      const u=DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase()&&u.hash===hash);
+      if(!u){aErr('Name oder Passwort falsch.');return;}
+      // migrate: ensure Alex is always admin
+      if(u.name.toLowerCase()==='alex'&&!u.isAdmin){u.isAdmin=true;saveDB();}
+      ME=u.name;saveMe(ME,stay);startApp();
+    }
+  }finally{
+    btn.disabled=false;
+    document.getElementById('a-spin').style.display='none';
+    document.getElementById('a-txt').style.display='';
+  }
+}
+
+// ══ APP ══════════════════════════════════════════════════
+function startApp(){
+  document.getElementById('auth').classList.add('gone');
+  const app=document.getElementById('app');
+  app.removeAttribute('hidden');
+  document.getElementById('u-av').textContent=ini(ME);
+  document.getElementById('u-nm').textContent=ME;
+  document.getElementById('u-pill').onclick=()=>{ME=null;saveMe(null);location.reload();};
+  document.getElementById('admin-btn').style.display=meIsAdmin()?'flex':'none';
+  document.getElementById('admin-btn').onclick=openAdminPanel;
+  render();
+  startSync();
+}
+
+function render(){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===DB.tab));
+  document.getElementById('fab').hidden=false;
+  const c=document.getElementById('content');
+  if(DB.tab==='termine')   c.innerHTML=vTermine();
+  if(DB.tab==='kasse')     c.innerHTML=vKasse();
+  if(DB.tab==='statistik') c.innerHTML=vStatistik();
+  if(DB.tab==='events')    c.innerHTML=vEvents();
+  if(DB.tab==='regeln')    c.innerHTML=vRegeln();
+  bindContent();
+}
+
+// ══ TERMINE ══════════════════════════════════════════════
+function vTermine(){
+  const sorted=[...DB.termine].sort((a,b)=>a.date<b.date?-1:1);
+  const cards=sorted.map((t,i)=>{
+    const v=t.votes||{};
+    let ja=0,may=0,nein=0;
+    DB.users.forEach(u=>{if(v[u.name]==='ja')ja++;else if(v[u.name]==='maybe')may++;else if(v[u.name]==='nein')nein++;});
+    const chips=DB.users.map(u=>{
+      const s=v[u.name]||'';
+      const sym=s==='ja'?'✓':s==='maybe'?'~':s==='nein'?'✗':'';
+      return `<span class="vc ${s==='maybe'?'may':s}${u.name===ME?' me':''}">${esc(u.name)}${sym?' '+sym:''}</span>`;
+    }).join('');
+    const myV=v[ME]||'';
+    return`<div class="card">
+      <div class="ch">
+        <div>
+          <div class="t-date">${esc(fmtD(t.date))}</div>
+          <div class="t-meta">🕖 ${esc(t.time)} Uhr · 📍 ${esc(t.ort)}</div>
+          ${t.addedBy?`<div class="t-by">von ${esc(t.addedBy)}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          ${i===0?'<span class="badge b-next">Nächster</span>':''}
+          ${meIsAdmin()?`<div style="display:flex;gap:5px">
+            <button class="rg-act" data-edit-termin="${t.id}">✎</button>
+            <button class="del-btn" data-del-termin="${t.id}">✕</button>
+          </div>`:''}
+        </div>
+      </div>
+      <div class="cb">
+        <div class="tally">
+          <span class="tv ja"><span class="tv-d"></span>${ja} Ja</span>
+          <span class="tv may"><span class="tv-d"></span>${may} Vielleicht</span>
+          <span class="tv nein"><span class="tv-d"></span>${nein} Nein</span>
+        </div>
+        <div class="t-side">
+          <div class="vgrid">${chips}</div>
+          <div class="vrow">
+            <button class="vb${myV==='ja'?' ja':''}" data-vote="ja" data-tid="${t.id}">✓ Ja</button>
+            <button class="vb${myV==='maybe'?' may':''}" data-vote="maybe" data-tid="${t.id}">~ Vielleicht</button>
+            <button class="vb${myV==='nein'?' nein':''}" data-vote="nein" data-tid="${t.id}">✗ Nein</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty"><div class="empty-i">📅</div><p class="empty-t">Noch keine Termine.<br>Schlag den ersten vor!</p></div>';
+
+  return`<div class="me-bar">
+    <div class="u-av">${esc(ini(ME))}</div>
+    Du stimmst als <strong>${esc(ME)}</strong> ab · Dein Name ist goldfarben markiert
+  </div>
+  ${vStrafenSection()}
+  <div class="sec">Kommende Termine</div>
+  ${cards}`;
+}
+
+function vStrafenSection(){
+  const totals={};
+  DB.users.forEach(u=>{totals[u.name]=0;});
+  DB.strafen.forEach(s=>{totals[s.player]=(totals[s.player]||0)+s.betrag;});
+  const sorted=DB.users.map(u=>({name:u.name,amt:totals[u.name]||0})).sort((a,b)=>b.amt-a.amt);
+  const total=sorted.reduce((s,p)=>s+p.amt,0);
+  const rows=sorted.map(p=>`
+    <div class="straf-row">
+      <div class="straf-av">${esc(ini(p.name))}</div>
+      <span class="straf-name">${esc(p.name)}</span>
+      <span class="straf-amt ${p.amt>0?'has':'zero'}">${euro(p.amt)}</span>
+      <button class="btn-plus" data-straf-player="${esc(p.name)}" title="Strafe eintragen">+</button>
+    </div>`).join('');
+  return`<div class="straf-card">
+    <div class="straf-head">
+      <span class="straf-title">💸 Strafenkasse</span>
+      <span class="straf-sum">Gesamt ${euro(total)}</span>
+    </div>
+    ${rows||'<div style="padding:12px 14px;font-size:.78rem;color:var(--t3)">Noch keine Strafen eingetragen.</div>'}
+  </div>`;
+}
+
+// ══ KASSE ════════════════════════════════════════════════
+function vKasse(){
+  const bal=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+  const cls=bal>0?'pos':bal<0?'neg':'z';
+  const rows=[...DB.kasse].reverse().map(b=>`
+    <div class="b-row">
+      <div class="b-date">${fmtS(b.date)}</div>
+      <div class="b-info">
+        <div class="b-desc">${esc(b.desc)}</div>
+        ${b.addedBy?`<div class="b-by">von ${esc(b.addedBy)}</div>`:''}
+      </div>
+      <div class="b-amt ${b.type==='ein'?'pos':'neg'}">${b.type==='ein'?'+':'−'}${euro(b.betrag)}</div>
+      ${meIsAdmin()?`<div style="display:flex;gap:3px;flex-shrink:0">
+        <button class="rg-act" data-edit-buch="${b.id}">✎</button>
+        <button class="del-btn" data-del-buch="${b.id}">✕</button>
+      </div>`:''}
+    </div>`).join('');
+  return`<div class="k-hero">
+    <div class="k-lbl">Kassenstand</div>
+    <div class="k-amt ${cls}">${bal>=0?'+':''}${euro(bal)}</div>
+    <div class="k-sub">${DB.kasse.length} Buchungen</div>
+  </div>
+  <button class="btn-outline" id="btn-buch" style="margin-bottom:15px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Buchung eintragen
+  </button>
+  <div class="sec">Buchungshistorie</div>
+  ${rows||'<div class="empty"><div class="empty-i">💶</div><p class="empty-t">Noch keine Buchungen.</p></div>'}`;
+}
+
+// ══ STATISTIK ════════════════════════════════════════════
+function computeStats(){
+  const s={solos:{},fehlwurf:{},hochzeit:{},pflichtsolo:{},strafen:{}};
+  DB.users.forEach(u=>{
+    s.solos[u.name]=0;s.fehlwurf[u.name]=0;
+    s.hochzeit[u.name]=0;s.pflichtsolo[u.name]=0;s.strafen[u.name]=0;
+  });
+  DB.ereignisse.forEach(e=>{
+    if(e.type==='solo')        s.solos[e.player]=(s.solos[e.player]||0)+1;
+    if(e.type==='fehlwurf')    s.fehlwurf[e.player]=(s.fehlwurf[e.player]||0)+1;
+    if(e.type==='hochzeit')    s.hochzeit[e.player]=(s.hochzeit[e.player]||0)+1;
+    if(e.type==='pflichtsolo'&&e.won) s.pflichtsolo[e.player]=(s.pflichtsolo[e.player]||0)+1;
+  });
+  DB.strafen.forEach(e=>{s.strafen[e.player]=(s.strafen[e.player]||0)+e.betrag;});
+  return s;
+}
+
+function lboard(data,icon,label,fmtFn,valCls=''){
+  const sorted=Object.entries(data).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const inner=sorted.length
+    ?sorted.slice(0,5).map(([name,val],i)=>`
+      <div class="stat-row">
+        <span class="stat-med">${['🥇','🥈','🥉'][i]||i+1+'.'}</span>
+        <span class="stat-nm">${esc(name)}</span>
+        <span class="stat-val ${valCls}">${fmtFn(val)}</span>
+      </div>`).join('')
+    :`<div class="stat-empty">Noch keine Einträge</div>`;
+  return`<div class="stat-card">
+    <div class="stat-head">${icon} ${esc(label)}</div>${inner}</div>`;
+}
+
+function vStatistik(){
+  const st=computeStats();
+  const typeLabel={solo:'🃏 Solo',fehlwurf:'🤦 Fehlwurf',hochzeit:'💒 Hochzeit',pflichtsolo:'🏆 Pflicht-Solo'};
+  const logRows=[...DB.ereignisse].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`
+    <div class="stat-row">
+      <span class="stat-med" style="font-size:.75rem">${fmtS(e.date)}</span>
+      <span class="stat-nm">${esc(e.player)}</span>
+      <span class="stat-val" style="font-size:.78rem;color:var(--t2)">${typeLabel[e.type]||e.type}${e.type==='pflichtsolo'?(e.won?' ✓':' ✗'):''}</span>
+      ${meIsAdmin()?`<button class="del-btn" data-del-ereignis="${e.id}" title="Löschen">✕</button>`:''}
+    </div>`).join('');
+  return`<div class="stat-grid">
+    ${lboard(st.solos,'🃏','Meiste Solos',v=>v+'×')}
+    ${lboard(st.fehlwurf,'🤦','Fehlwürfe',v=>v+'×','red')}
+    ${lboard(st.hochzeit,'💒','Hochzeiten',v=>v+'×')}
+    ${lboard(st.pflichtsolo,'🏆','Pflicht-Solo Siege',v=>v+'×')}
+    <div class="stat-card wide">
+      <div class="stat-head">💸 Meiste Strafen</div>
+      ${Object.entries(st.strafen).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).length
+        ?Object.entries(st.strafen).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,val],i)=>`
+          <div class="stat-row">
+            <span class="stat-med">${['🥇','🥈','🥉'][i]||i+1+'.'}</span>
+            <span class="stat-nm">${esc(name)}</span>
+            <span class="stat-val red">${euro(val)}</span>
+          </div>`).join('')
+        :'<div class="stat-empty">Noch keine Strafen eingetragen</div>'}
+    </div>
+    <div class="stat-card wide">
+      <div class="stat-head">📋 Ereignis-Protokoll</div>
+      ${logRows||'<div class="stat-empty">Noch keine Ereignisse erfasst</div>'}
+    </div>
+  </div>`;
+}
+
+// ══ EVENTS ═══════════════════════════════════════════════
+function vEvents(){
+  const cards=[...DB.veranstaltungen].sort((a,b)=>a.date<b.date?-1:1).map(e=>`
+    <div class="ev">
+      <div class="ev-stripe"></div>
+      <div class="ev-body">
+        <div class="ev-date">📅 ${esc(fmtD(e.date))}</div>
+        <div class="ev-title">${esc(e.title)}</div>
+        <div class="ev-desc">${esc(e.desc)}</div>
+        ${e.ort?`<div class="ev-ort">📍 ${esc(e.ort)}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px;padding-top:7px;border-top:1px solid var(--bd)">
+          ${e.addedBy?`<span class="ev-by" style="margin:0">von ${esc(e.addedBy)}</span>`:'<span></span>'}
+          ${meIsAdmin()?`<div style="display:flex;gap:5px">
+            <button class="rg-act" data-edit-event="${e.id}">✎ Bearbeiten</button>
+            <button class="del-btn" data-del-event="${e.id}">✕</button>
+          </div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+  return cards||'<div class="empty"><div class="empty-i">🎉</div><p class="empty-t">Noch keine Veranstaltungen.</p></div>';
+}
+
+// ══ REGELN ═══════════════════════════════════════════════
+function vRegeln(){
+  const adm=meIsAdmin();
+  const g={};
+  DB.regeln.forEach(r=>{(g[r.kat]||(g[r.kat]=[])).push(r);});
+  const defined=DB.kategorien.map(k=>k.name);
+  const orphans=Object.keys(g).filter(k=>!defined.includes(k));
+  const allKats=[...defined,...orphans];
+
+  const sections=allKats.map(kat=>{
+    const rows=g[kat]||[];
+    const ruleRows=rows.map(r=>`
+      <div class="rg-row">
+        <span class="rg-txt">${esc(r.text)}</span>
+        <span class="rg-straf">${esc(r.strafe)}</span>
+        ${adm?`<button class="rg-act" data-edit-regel="${r.id}" title="Bearbeiten">✎</button>
+               <button class="del-btn" data-del-regel="${r.id}" title="Löschen">✕</button>`:''}
+      </div>`).join('');
+    return`<div class="rg-group">
+      <div class="rg-grp-head">
+        <span class="rg-grp-name">${esc(kat)}</span>
+        <span class="rg-grp-count">${rows.length} Regel${rows.length!==1?'n':''}</span>
+        ${adm?`<button class="rg-act" data-add-regel-kat="${esc(kat)}">+ Regel</button>
+               <button class="rg-act" data-edit-kat="${esc(kat)}">✎ Kat.</button>`:''}
+      </div>
+      ${ruleRows||`<div style="padding:10px 14px;font-size:.78rem;color:var(--t3)">Noch keine Regeln.</div>`}
+    </div>`;
+  }).join('');
+
+  const addKatBtn=adm?`<button class="btn-outline" id="btn-add-kat">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Überkategorie hinzufügen
+  </button>`:'';
+  return sections+addKatBtn;
+}
+
+// ══ MODALS ═══════════════════════════════════════════════
+function openM(html){
+  const el=document.getElementById('modal');
+  el.innerHTML=`<div class="veil" id="veil">${html}</div>`;
+  document.getElementById('veil').addEventListener('click',e=>{if(e.target===e.currentTarget)closeM();});
+}
+function closeM(){document.getElementById('modal').innerHTML='';}
+
+function mTermin(t){
+  const isEdit=!!t;
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">${isEdit?'Termin bearbeiten':'Termin vorschlagen'}</div>
+    ${!isEdit?`<div class="sf"><label>Von</label><input type="text" value="${esc(ME)}" readonly/></div>`:''}
+    <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${t?.date||''}" min="${isEdit?'':new Date().toISOString().slice(0,10)}"/></div>
+    <div class="sf"><label>Uhrzeit</label><input type="time" id="m-time" value="${t?.time||'19:30'}"/></div>
+    <div class="sf"><label>Ort</label><input type="text" id="m-ort" value="${esc(t?.ort||'Gasthaus Krone')}"/></div>
+    ${isEdit?`<button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Termin löschen</button>`:''}
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">${isEdit?'Speichern ✓':'Vorschlagen ✓'}</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const d=document.getElementById('m-date').value;
+    if(!d){alert('Datum fehlt.');return;}
+    const time=document.getElementById('m-time').value||'19:30';
+    const ort=document.getElementById('m-ort').value.trim()||'k.A.';
+    if(isEdit){
+      const idx=DB.termine.findIndex(x=>x.id===t.id);
+      if(idx>=0) DB.termine[idx]={...DB.termine[idx],date:d,time,ort};
+    }else{
+      DB.termine.push({id:DB.nextId++,date:d,time,ort,votes:{},addedBy:ME});
+    }
+    saveDB();closeM();render();
+  };
+  if(isEdit) document.getElementById('m-del').onclick=()=>{
+    DB.termine=DB.termine.filter(x=>x.id!==t.id);
+    saveDB();closeM();render();
+  };
+}
+
+function mStrafe(prePlayer){
+  const today=new Date().toISOString().slice(0,10);
+  const regelRows=DB.regeln.map(r=>`
+    <button class="schnell-regel" data-betrag="${r.betrag}" data-text="${esc(r.text)}">
+      <span class="sr-text">${esc(r.text)}</span>
+      <span class="sr-amt">${esc(r.strafe)}</span>
+    </button>`).join('');
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">💸 Strafe für <span style="color:var(--gold)">${esc(prePlayer)}</span></div>
+    <div style="font-size:.72rem;color:var(--t3);text-align:center;margin-bottom:14px">Regel antippen → sofort gebucht</div>
+    <div class="schnell-list">${regelRows}</div>
+    <div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:12px">
+      <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:8px">Sonstiges</div>
+      <div style="display:flex;gap:7px">
+        <input type="text" id="m-sonst-text" placeholder="Beschreibung" style="flex:1;padding:9px 11px;background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);color:var(--t1);font-size:.85rem;font-family:inherit;outline:none"/>
+        <input type="number" id="m-sonst-amt" placeholder="€" min="0" step="0.5" style="width:70px;padding:9px 11px;background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);color:var(--t1);font-size:.85rem;font-family:inherit;outline:none"/>
+        <button id="m-sonst-ok" style="padding:9px 13px;background:var(--gold);color:var(--bg);border:none;border-radius:var(--rs);font-weight:800;cursor:pointer">✓</button>
+      </div>
+    </div>
+    <button class="s-cancel" id="mc" style="width:100%;margin-top:12px">Abbrechen</button>
+  </div>`);
+
+  function buchStrafe(text, betrag){
+    if(!betrag||betrag<=0){alert('Betrag prüfen.');return;}
+    DB.strafen.push({id:DB.nextId++,date:today,player:prePlayer,grund:text,betrag,addedBy:ME});
+    saveDB();closeM();render();
+  }
+
+  document.querySelectorAll('.schnell-regel').forEach(b=>{
+    b.onclick=()=>buchStrafe(b.dataset.text, parseFloat(b.dataset.betrag));
+  });
+  document.getElementById('m-sonst-ok').onclick=()=>{
+    const text=document.getElementById('m-sonst-text').value.trim()||'Sonstiges';
+    const betrag=parseFloat(document.getElementById('m-sonst-amt').value);
+    buchStrafe(text, betrag);
+  };
+  document.getElementById('mc').onclick=closeM;
+}
+
+function recalcBalances(){
+  let bal=0;
+  DB.kasse.forEach(b=>{
+    bal=Math.round((bal+(b.type==='ein'?b.betrag:-b.betrag))*100)/100;
+    b.balance=bal;
+  });
+}
+
+function mBuchungEdit(b){
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">Buchung bearbeiten</div>
+    <div class="sf"><label>Art</label>
+      <div class="t-row">
+        <button class="ttgl${b.type==='ein'?' ein':''}" id="t-ein" onclick="sTyp('ein')">+ Einnahme</button>
+        <button class="ttgl${b.type==='aus'?' aus':''}" id="t-aus" onclick="sTyp('aus')">− Ausgabe</button>
+      </div><input type="hidden" id="m-type" value="${b.type}"/>
+    </div>
+    <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${b.date}"/></div>
+    <div class="sf"><label>Beschreibung</label><input type="text" id="m-desc" value="${esc(b.desc)}"/></div>
+    <div class="sf"><label>Betrag (€)</label><input type="number" id="m-betrag" min="0" step="0.5" value="${b.betrag}"/></div>
+    <button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Buchung löschen</button>
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button><button class="s-save" id="ms">Speichern ✓</button></div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const type=document.getElementById('m-type').value;
+    const date=document.getElementById('m-date').value;
+    const desc=document.getElementById('m-desc').value.trim();
+    const betrag=parseFloat(document.getElementById('m-betrag').value);
+    if(!date||!desc||isNaN(betrag)||betrag<=0){alert('Alle Felder ausfüllen.');return;}
+    const idx=DB.kasse.findIndex(x=>x.id===b.id);
+    if(idx>=0) DB.kasse[idx]={...DB.kasse[idx],type,date,desc,betrag};
+    recalcBalances();saveDB();closeM();render();
+  };
+  document.getElementById('m-del').onclick=()=>{
+    DB.kasse=DB.kasse.filter(x=>x.id!==b.id);
+    recalcBalances();saveDB();closeM();render();
+  };
+}
+
+function mBuchung(){
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">Neue Buchung</div>
+    <div class="sf"><label>Von</label><input type="text" value="${esc(ME)}" readonly/></div>
+    <div class="sf"><label>Art</label>
+      <div class="t-row">
+        <button class="ttgl ein" id="t-ein" onclick="sTyp('ein')">+ Einnahme</button>
+        <button class="ttgl" id="t-aus" onclick="sTyp('aus')">− Ausgabe</button>
+      </div><input type="hidden" id="m-type" value="ein"/>
+    </div>
+    <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+    <div class="sf"><label>Beschreibung</label><input type="text" id="m-desc" placeholder="z.B. Spielabend #4"/></div>
+    <div class="sf"><label>Betrag (€)</label><input type="number" id="m-betrag" min="0" step="0.5" placeholder="0,00"/></div>
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button><button class="s-save" id="ms">Buchen ✓</button></div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const type=document.getElementById('m-type').value;
+    const date=document.getElementById('m-date').value;
+    const desc=document.getElementById('m-desc').value.trim();
+    const betrag=parseFloat(document.getElementById('m-betrag').value);
+    if(!date||!desc||isNaN(betrag)||betrag<=0){alert('Alle Felder ausfüllen.');return;}
+    const prev=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+    DB.kasse.push({id:DB.nextId++,date,desc,type,betrag,
+      balance:Math.round((prev+(type==='ein'?betrag:-betrag))*100)/100,addedBy:ME});
+    saveDB();closeM();render();
+  };
+}
+window.sTyp=function(t){
+  document.getElementById('m-type').value=t;
+  document.getElementById('t-ein').className='ttgl'+(t==='ein'?' ein':'');
+  document.getElementById('t-aus').className='ttgl'+(t==='aus'?' aus':'');
+};
+
+function mEreignis(){
+  const playerOpts=DB.users.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('');
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">Spielereignis erfassen</div>
+    <div class="sf"><label>Spieler</label><select id="m-player">${playerOpts}</select></div>
+    <div class="sf"><label>Ereignis</label>
+      <select id="m-type">
+        <option value="solo">Solo</option>
+        <option value="fehlwurf">Fehlwurf (Karten falsch ausgeteilt)</option>
+        <option value="hochzeit">Hochzeit</option>
+        <option value="pflichtsolo">Pflicht-Solo</option>
+      </select>
+    </div>
+    <div class="sf" id="won-wrap"><label>Pflicht-Solo Ergebnis</label>
+      <select id="m-won"><option value="1">Gewonnen 🏆</option><option value="0">Verloren</option></select>
+    </div>
+    <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${new Date().toISOString().slice(0,10)}"/></div>
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button><button class="s-save" id="ms">Speichern ✓</button></div>
+  </div>`);
+  document.getElementById('m-type').onchange=function(){
+    document.getElementById('won-wrap').style.display=this.value==='pflichtsolo'?'block':'none';
+  };
+  document.getElementById('won-wrap').style.display='none';
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const player=document.getElementById('m-player').value;
+    const type=document.getElementById('m-type').value;
+    const won=type==='pflichtsolo'?document.getElementById('m-won').value==='1':undefined;
+    const date=document.getElementById('m-date').value;
+    if(!player||!date){alert('Felder prüfen.');return;}
+    DB.ereignisse.push({id:DB.nextId++,date,player,type,won,addedBy:ME});
+    saveDB();closeM();render();
+  };
+}
+
+function mEvent(e){
+  const isEdit=!!e;
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">${isEdit?'Veranstaltung bearbeiten':'Veranstaltung hinzufügen'}</div>
+    ${!isEdit?`<div class="sf"><label>Von</label><input type="text" value="${esc(ME)}" readonly/></div>`:''}
+    <div class="sf"><label>Titel</label><input type="text" id="m-title" value="${esc(e?.title||'')}" placeholder="z.B. Sommer-Turnier"/></div>
+    <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${e?.date||''}"/></div>
+    <div class="sf"><label>Ort</label><input type="text" id="m-ort" value="${esc(e?.ort||'')}" placeholder="z.B. Vereinsheim"/></div>
+    <div class="sf"><label>Beschreibung</label><textarea id="m-desc" placeholder="Details…">${esc(e?.desc||'')}</textarea></div>
+    ${isEdit?`<button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Veranstaltung löschen</button>`:''}
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">${isEdit?'Speichern ✓':'Hinzufügen ✓'}</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const title=document.getElementById('m-title').value.trim();
+    const date=document.getElementById('m-date').value;
+    if(!title||!date){alert('Titel und Datum angeben.');return;}
+    const ort=document.getElementById('m-ort').value.trim();
+    const desc=document.getElementById('m-desc').value.trim();
+    if(isEdit){
+      const idx=DB.veranstaltungen.findIndex(x=>x.id===e.id);
+      if(idx>=0) DB.veranstaltungen[idx]={...DB.veranstaltungen[idx],title,date,ort,desc};
+    }else{
+      DB.veranstaltungen.push({id:DB.nextId++,title,date,ort,desc,addedBy:ME});
+    }
+    saveDB();closeM();render();
+  };
+  if(isEdit) document.getElementById('m-del').onclick=()=>{
+    DB.veranstaltungen=DB.veranstaltungen.filter(x=>x.id!==e.id);
+    saveDB();closeM();render();
+  };
+}
+
+function mRegel(r, defaultKat){
+  const isEdit=!!r;
+  const katOpts=DB.kategorien.map(k=>`<option value="${esc(k.name)}"${(r?.kat||defaultKat)===k.name?' selected':''}>${esc(k.name)}</option>`).join('');
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">${isEdit?'Regel bearbeiten':'Neue Regel'}</div>
+    <div class="sf"><label>Kategorie</label><select id="m-kat">${katOpts}</select></div>
+    <div class="sf"><label>Regeltext</label>
+      <input type="text" id="m-text" value="${esc(r?.text||'')}" placeholder="z.B. Karten falsch ausgeteilt"/></div>
+    <div class="sf"><label>Strafe (Anzeige)</label>
+      <input type="text" id="m-strafe" value="${esc(r?.strafe||'')}" placeholder="z.B. 0,50 €"/></div>
+    <div class="sf"><label>Betrag (€)</label>
+      <input type="number" id="m-betrag" min="0" step="0.5" value="${r?.betrag??0.5}"/></div>
+    ${isEdit?`<button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Regel löschen</button>`:''}
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">${isEdit?'Speichern ✓':'Hinzufügen ✓'}</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const kat=document.getElementById('m-kat').value;
+    const text=document.getElementById('m-text').value.trim();
+    const strafe=document.getElementById('m-strafe').value.trim();
+    const betrag=parseFloat(document.getElementById('m-betrag').value);
+    if(!text||!strafe||isNaN(betrag)){alert('Alle Felder ausfüllen.');return;}
+    if(isEdit){
+      const idx=DB.regeln.findIndex(x=>x.id===r.id);
+      if(idx>=0) DB.regeln[idx]={...DB.regeln[idx],kat,text,strafe,betrag};
+    }else{
+      DB.regeln.push({id:DB.nextId++,kat,text,strafe,betrag});
+    }
+    saveDB();closeM();render();
+  };
+  if(isEdit) document.getElementById('m-del').onclick=()=>{
+    DB.regeln=DB.regeln.filter(x=>x.id!==r.id);
+    saveDB();closeM();render();
+  };
+}
+
+function mKategorie(katName){
+  const isEdit=!!katName;
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">${isEdit?'Kategorie bearbeiten':'Neue Überkategorie'}</div>
+    <div class="sf"><label>Name</label>
+      <input type="text" id="m-katname" value="${esc(katName||'')}" placeholder="z.B. Sonderregeln"/></div>
+    ${isEdit?`<button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Kategorie löschen</button>`:''}
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">${isEdit?'Speichern ✓':'Erstellen ✓'}</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const name=document.getElementById('m-katname').value.trim();
+    if(!name){alert('Name eingeben.');return;}
+    if(isEdit){
+      const k=DB.kategorien.find(x=>x.name===katName);
+      if(k) k.name=name;
+      DB.regeln.forEach(r=>{if(r.kat===katName)r.kat=name;});
+    }else{
+      DB.kategorien.push({id:DB.nextId++,name});
+    }
+    saveDB();closeM();render();
+  };
+  if(isEdit) document.getElementById('m-del').onclick=()=>{
+    const hasRules=DB.regeln.some(r=>r.kat===katName);
+    if(hasRules&&!confirm('Kategorie hat noch Regeln. Trotzdem löschen?'))return;
+    DB.kategorien=DB.kategorien.filter(k=>k.name!==katName);
+    saveDB();closeM();render();
+  };
+}
+
+// ══ ADMIN PANEL ═══════════════════════════════════════════
+function openAdminPanel(){
+  const rows=DB.users.map(u=>{
+    const adm=u.isAdmin;
+    const isMe=u.name===ME;
+    return`<div class="admin-row">
+      <div class="u-av">${esc(ini(u.name))}</div>
+      <div class="adm-info">
+        <div class="adm-nm">${esc(u.name)}</div>
+        <div class="adm-role">${adm?'👑 Administrator':'Spieler'}</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        ${!isMe?`<button class="adm-btn ${adm?'revoke':'grant'}" data-adm-user="${esc(u.name)}" data-adm-val="${adm?'0':'1'}">
+          ${adm?'Admin entfernen':'Admin machen'}
+        </button>`:'<span style="font-size:.72rem;color:var(--t3)">Du</span>'}
+        <button class="adm-btn" data-reset-user="${esc(u.name)}" title="Passwort zurücksetzen">🔑</button>
+      </div>
+    </div>`;
+  }).join('');
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">⚙ Admin-Panel</div>
+    <div style="font-size:.75rem;color:var(--t3);text-align:center;margin-bottom:16px">
+      Nutzer verwalten · Admins können Rollen vergeben
+    </div>
+    ${rows||'<div style="color:var(--t3);text-align:center;padding:20px">Keine Nutzer</div>'}
+    <div style="margin-top:12px"><button class="s-cancel" id="mc" style="width:100%">Schließen</button></div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.querySelectorAll('[data-adm-user]').forEach(btn=>{
+    btn.onclick=()=>{
+      const u=DB.users.find(x=>x.name===btn.dataset.admUser);
+      if(u){u.isAdmin=btn.dataset.admVal==='1';saveDB();}
+      openAdminPanel();
+    };
+  });
+  document.querySelectorAll('[data-reset-user]').forEach(btn=>{
+    btn.onclick=()=>mResetPw(btn.dataset.resetUser);
+  });
+}
+
+function mResetPw(name){
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">🔑 Passwort zurücksetzen</div>
+    <div style="font-size:.78rem;color:var(--t3);text-align:center;margin-bottom:16px">Neues Passwort für <strong style="color:var(--t1)">${esc(name)}</strong></div>
+    <div class="sf"><label>Neues Passwort</label><input type="text" id="m-newpw" placeholder="Mindestens 4 Zeichen" autocomplete="off"/></div>
+    <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">Zurücksetzen ✓</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=async()=>{
+    const pw=document.getElementById('m-newpw').value;
+    if(pw.length<4){alert('Mindestens 4 Zeichen.');return;}
+    const hash=await hashPw(pw);
+    const u=DB.users.find(x=>x.name===name);
+    if(u){u.hash=hash;saveDB();}
+    closeM();
+    openAdminPanel();
+  };
+}
+
+// ══ BIND ══════════════════════════════════════════════════
+function bindContent(){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{DB.tab=t.dataset.tab;saveDB();render();};
+  });
+  document.getElementById('fab').onclick=()=>{
+    if(DB.tab==='termine')   mTermin();
+    if(DB.tab==='kasse')     mBuchung();
+    if(DB.tab==='statistik') mEreignis();
+    if(DB.tab==='events')    mEvent();
+    if(DB.tab==='regeln')    mRegel(null, DB.kategorien[0]?.name);
+  };
+  document.querySelectorAll('[data-vote]').forEach(b=>{
+    b.onclick=()=>{
+      const t=DB.termine.find(x=>x.id===+b.dataset.tid);
+      if(!t)return;
+      t.votes=t.votes||{};
+      if(t.votes[ME]===b.dataset.vote) delete t.votes[ME]; else t.votes[ME]=b.dataset.vote;
+      saveDB();render();
+    };
+  });
+  document.querySelectorAll('[data-straf-player]').forEach(b=>{
+    b.onclick=()=>mStrafe(b.dataset.strafPlayer);
+  });
+  document.getElementById('btn-buch')?.addEventListener('click',mBuchung);
+  document.querySelectorAll('[data-edit-buch]').forEach(b=>{
+    b.onclick=()=>{const buch=DB.kasse.find(x=>x.id===+b.dataset.editBuch);if(buch)mBuchungEdit(buch);};
+  });
+  document.querySelectorAll('[data-del-buch]').forEach(b=>{
+    b.onclick=()=>{DB.kasse=DB.kasse.filter(x=>x.id!==+b.dataset.delBuch);recalcBalances();saveDB();render();};
+  });
+  document.getElementById('btn-add-kat')?.addEventListener('click',()=>mKategorie(null));
+  document.querySelectorAll('[data-del-ereignis]').forEach(b=>{
+    b.onclick=()=>{DB.ereignisse=DB.ereignisse.filter(e=>e.id!==+b.dataset.delEreignis);saveDB();render();};
+  });
+  document.querySelectorAll('[data-edit-regel]').forEach(b=>{
+    b.onclick=()=>{const r=DB.regeln.find(x=>x.id===+b.dataset.editRegel);if(r)mRegel(r);};
+  });
+  document.querySelectorAll('[data-del-regel]').forEach(b=>{
+    b.onclick=()=>{DB.regeln=DB.regeln.filter(x=>x.id!==+b.dataset.delRegel);saveDB();render();};
+  });
+  document.querySelectorAll('[data-edit-kat]').forEach(b=>{
+    b.onclick=()=>mKategorie(b.dataset.editKat);
+  });
+  document.querySelectorAll('[data-add-regel-kat]').forEach(b=>{
+    b.onclick=()=>mRegel(null, b.dataset.addRegelKat);
+  });
+  document.querySelectorAll('[data-edit-termin]').forEach(b=>{
+    b.onclick=()=>{const t=DB.termine.find(x=>x.id===+b.dataset.editTermin);if(t)mTermin(t);};
+  });
+  document.querySelectorAll('[data-del-termin]').forEach(b=>{
+    b.onclick=()=>{DB.termine=DB.termine.filter(x=>x.id!==+b.dataset.delTermin);saveDB();render();};
+  });
+  document.querySelectorAll('[data-edit-event]').forEach(b=>{
+    b.onclick=()=>{const e=DB.veranstaltungen.find(x=>x.id===+b.dataset.editEvent);if(e)mEvent(e);};
+  });
+  document.querySelectorAll('[data-del-event]').forEach(b=>{
+    b.onclick=()=>{DB.veranstaltungen=DB.veranstaltungen.filter(x=>x.id!==+b.dataset.delEvent);saveDB();render();};
+  });
+}
+
+// ══ INIT ══════════════════════════════════════════════════
+initAuth();
+if(ME&&DB.users.find(u=>u.name===ME)) startApp();
+</script>
