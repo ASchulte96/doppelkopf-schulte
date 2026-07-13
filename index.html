@@ -442,12 +442,20 @@ async function syncPush(dbData){
   }catch(e){}
 }
 
+function fbFix(v){
+  if(!v||typeof v!=='object')return v;
+  const keys=Object.keys(v);
+  if(keys.length&&keys.every(k=>/^\d+$/.test(k)))
+    return keys.sort((a,b)=>+a-+b).map(k=>fbFix(v[k]));
+  const o={};keys.forEach(k=>o[k]=fbFix(v[k]));return o;
+}
+
 async function syncPull(){
   if(syncing)return; syncing=true;
   try{
     const r=await fetch(FB_URL);
     if(!r.ok)return;
-    const remote=await r.json();
+    const remote=fbFix(await r.json());
     if(remote&&(remote.version||0)>(DB.version||0)){
       const tab=DB.tab;
       DB=remote; DB.tab=tab;
