@@ -952,6 +952,11 @@ function mStrafe(prePlayer){
   function buchStrafe(text, betrag){
     if(!betrag||betrag<=0){alert('Betrag prüfen.');return;}
     DB.strafen.push({id:DB.nextId++,date:today,player:prePlayer,grund:text,betrag,addedBy:ME});
+    const prev=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+    DB.kasse.push({id:DB.nextId++,date:today,
+      desc:`Strafe: ${prePlayer} – ${text}`,
+      type:'ein',betrag,
+      balance:Math.round((prev+betrag)*100)/100,addedBy:ME});
     saveDB();closeM();render();
   }
 
