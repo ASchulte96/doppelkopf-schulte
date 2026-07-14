@@ -823,6 +823,8 @@ async function doAuth(){
     if(aMode==='register'){
       if(pw.length<4){aErr('Passwort mind. 4 Zeichen.');return;}
       if(pw!==pw2){aErr('Passwörter stimmen nicht überein.');return;}
+      // Erst aktuellen Stand von Firebase holen bevor registriert wird
+      await syncPull();
       if(DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase())){aErr('Name bereits vergeben.');return;}
       const isAlex=name.toLowerCase()==='alex';
       const noAdmins=!DB.users.some(u=>u.isAdmin);
