@@ -815,6 +815,8 @@ function mkDB(){
     ],
     changelog:[],    // {ts,user,action}
     kasseStart:0,    // Anfangsbestand (fließt nicht in Prognose-Trend ein)
+    tischPhase:0,    // 0=Runde1, 1=NachEssen, 2=HalliGalli
+    halliGalliSolos:[], // [{player,soloType,done}]
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -870,6 +872,13 @@ function canDo(area){
   if(area==='kasse'&&role==='kassenwart')return true;
   return (u.perms||[]).includes(area);
 }
+
+const PHASEN=[
+  {id:0,label:'Runde 1',icon:'🎴'},
+  {id:1,label:'Nach dem Essen',icon:'🍽️'},
+  {id:2,label:'Halli-Galli',icon:'🎰'},
+];
+const SOLO_TYPEN=['Buben','Damen','Trumpf'];
 
 const ROLLEN={
   spieler: {label:'Spieler',icon:'🎴',desc:'Leserechte + Termine abstimmen'},
@@ -1339,17 +1348,36 @@ function vPairingStats(){
 }
 
 // ══ TISCH ════════════════════════════════════════════════
+function renderTableCompact(group,tableNum){
+  const seat=n=>`<div class="dk-seat filled">
+    <div class="dk-seat-av">${esc(ini(n))}</div>
+    <div class="dk-seat-nm">${esc(n)}</div>
+  </div>`;
+  const north=[],east=[],south=[],west=[];
+  [north,east,south,west].forEach((s,i)=>group.filter((_,j)=>j%4===i).forEach(n=>s.push(n)));
+  return`<div class="dk-scene compact">
+    <div class="dk-row">${north.map(seat).join('')}</div>
+    <div class="dk-middle">
+      <div class="dk-side">${west.map(seat).join('')}</div>
+      <div class="dk-felt"><div class="dk-felt-num">Tisch ${tableNum}</div><div class="dk-felt-icon">🃏</div></div>
+      <div class="dk-side">${east.map(seat).join('')}</div>
+    </div>
+    <div class="dk-row">${south.map(seat).join('')}</div>
+  </div>`;
+}
+
 function vTisch(){
   const today=new Date().toISOString().slice(0,10);
+  const phase=DB.tischPhase||0;
   const naechster=[...DB.termine].filter(t=>t.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
+
+  // Hinweis-Banner
   let hinweis='';
   if(!naechster){
     hinweis=`<div style="background:linear-gradient(135deg,rgba(224,176,32,.15),rgba(224,176,32,.07));
       border:1.5px solid var(--yel-bd);border-left:3px solid var(--yel);border-radius:var(--r);
       padding:13px 14px;margin-bottom:13px">
-      <div style="font-size:.82rem;font-weight:700;color:var(--yel);margin-bottom:4px">
-        ⚠ Kein bevorstehender Termin geplant
-      </div>
+      <div style="font-size:.82rem;font-weight:700;color:var(--yel);margin-bottom:4px">⚠ Kein bevorstehender Termin geplant</div>
       <div style="font-size:.76rem;color:var(--t2)">Legt im Tab <strong>Termine</strong> den nächsten Spielabend fest.</div>
     </div>`;
   } else {
@@ -1370,52 +1398,99 @@ function vTisch(){
         <a href="https://wa.me/?text=${msg}" target="_blank"
           style="display:flex;align-items:center;justify-content:center;gap:7px;
           padding:9px;background:rgba(37,211,102,.14);border:1.5px solid rgba(37,211,102,.35);
-          border-radius:var(--rs);color:#4ADE80;font-size:.84rem;font-weight:700;
-          text-decoration:none">
+          border-radius:var(--rs);color:#4ADE80;font-size:.84rem;font-weight:700;text-decoration:none">
           📲 WhatsApp-Erinnerung senden
         </a>
       </div>`;
     }
   }
-  const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date));
-  function renderTableCompact(group,tableNum){
-    const seat=(n)=>`<div class="dk-seat filled">
-      <div class="dk-seat-av">${esc(ini(n))}</div>
-      <div class="dk-seat-nm">${esc(n)}</div>
-    </div>`;
-    const north=[],east=[],south=[],west=[];
-    const sides=[north,east,south,west];
-    group.forEach((n,i)=>sides[i%4].push(n));
-    return`<div class="dk-scene compact">
-      <div class="dk-row">${north.map(seat).join('')}</div>
-      <div class="dk-middle">
-        <div class="dk-side">${west.map(seat).join('')}</div>
-        <div class="dk-felt"><div class="dk-felt-num">Tisch ${tableNum}</div><div class="dk-felt-icon">🃏</div></div>
-        <div class="dk-side">${east.map(seat).join('')}</div>
-      </div>
-      <div class="dk-row">${south.map(seat).join('')}</div>
+
+  // Phasen-Pills
+  const pills=PHASEN.map(p=>`
+    <button onclick="setTischPhase(${p.id})" style="flex:1;padding:9px 2px;border-radius:var(--rs);
+      font-size:.78rem;font-weight:700;cursor:pointer;transition:.15s;line-height:1.3;
+      ${phase===p.id
+        ?'background:var(--gold);color:var(--s1);border:2px solid var(--gold)'
+        :'background:var(--s3);color:var(--t2);border:2px solid var(--bd)'}">
+      ${p.icon}<br>${p.label}
+    </button>`).join('');
+
+  // Aktuelle Sitzordnung dieser Phase (heute)
+  const todaySitz=[...DB.sitzordnungen]
+    .filter(s=>s.date===today&&(s.phase||0)===phase)
+    .sort((a,b)=>b.id-a.id)[0];
+
+  let currentView='';
+  if(todaySitz){
+    const half=Math.ceil(todaySitz.seats.length/2);
+    currentView=`<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0">
+      ${renderTableCompact(todaySitz.seats.slice(0,half),1)}
+      ${renderTableCompact(todaySitz.seats.slice(half),2)}
     </div>`;
   }
 
+  // Halli-Galli Solo-Tracker
+  let halliTracker='';
+  if(phase===2){
+    const solos=DB.halliGalliSolos||[];
+    const done=solos.filter(s=>s.done).length;
+    const total=solos.length;
+    halliTracker=`<div style="background:var(--s2);border-radius:var(--rs);
+      border:1.5px solid var(--gold-bd);padding:12px 14px;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:.84rem;font-weight:700;color:var(--gold)">🎰 Pflicht-Solos</div>
+        ${total?`<div style="font-size:.76rem;color:var(--t3)">${done}/${total} gespielt</div>`:''}
+      </div>
+      ${solos.length?solos.map((s,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+          border-bottom:1px solid var(--bd)">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--s3);
+            display:flex;align-items:center;justify-content:center;
+            font-size:.72rem;color:var(--t3);flex-shrink:0">${i+1}</div>
+          <div class="u-av" style="width:30px;height:30px;font-size:.76rem;flex-shrink:0">${esc(ini(s.player))}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.86rem;color:var(--t1);${s.done?'text-decoration:line-through;opacity:.55':''}">${esc(s.player)}</div>
+            ${s.done?`<div style="font-size:.72rem;color:var(--green)">✅ ${esc(s.soloType)}-Solo</div>`:'<div style="font-size:.72rem;color:var(--t3)">ausstehend</div>'}
+          </div>
+          ${!s.done&&canDo('sitzordnung')?`<button onclick="mHalliSolo(${i})"
+            style="background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:var(--rs);
+            padding:5px 10px;font-size:.78rem;color:var(--gold);cursor:pointer;white-space:nowrap">
+            Solo ▶
+          </button>`:''}
+        </div>`).join('')
+      :`<div style="color:var(--t3);font-size:.82rem;text-align:center;padding:8px 0">
+        Sitzordnung würfeln und speichern um die Reihenfolge festzulegen.
+      </div>`}
+    </div>`;
+  }
+
+  // Verlauf (alle Phasen)
+  const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
   const histRows=history.map(s=>{
+    const p=PHASEN[s.phase||0]||PHASEN[0];
     const half=Math.ceil(s.seats.length/2);
-    const t1=s.seats.slice(0,half);
-    const t2=s.seats.slice(half);
     return`<div class="card" style="padding:12px 14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:.78rem;font-weight:700;color:var(--t2)">${fmtS(s.date)}</span>
+        <div>
+          <span style="font-size:.78rem;font-weight:700;color:var(--t2)">${fmtS(s.date)}</span>
+          <span style="margin-left:8px;font-size:.72rem;color:var(--t3)">${p.icon} ${p.label}</span>
+        </div>
         ${canDo('sitzordnung')?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
       </div>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-        ${renderTableCompact(t1,1)}
-        ${renderTableCompact(t2,2)}
+        ${renderTableCompact(s.seats.slice(0,half),1)}
+        ${renderTableCompact(s.seats.slice(half),2)}
       </div>
     </div>`;
   }).join('');
 
-  return`${hinweis}<button class="btn-sitz" id="btn-sitz">🎲 Sitzordnung würfeln</button>
-  <div class="sec">Gespeicherte Abende</div>
-  ${histRows||'<div class="empty"><div class="empty-i">🎲</div><p class="empty-t">Noch keine Sitzordnungen gespeichert.<br>Würfle und speichere den ersten Abend!</p></div>'}`;
+  return`${hinweis}
+  <div style="display:flex;gap:6px;margin-bottom:14px">${pills}</div>
+  ${currentView}
+  ${halliTracker}
+  <button class="btn-sitz" id="btn-sitz">🎲 ${PHASEN[phase].label} würfeln</button>
+  <div class="sec">Verlauf</div>
+  ${histRows||'<div class="empty"><div class="empty-i">🎲</div><p class="empty-t">Noch keine Sitzordnungen gespeichert.</p></div>'}`;
 }
 
 // ══ EVENTS ═══════════════════════════════════════════════
@@ -1658,6 +1733,54 @@ function mKasseStart(){
     closeM();render();
   };
 }
+
+window.setTischPhase=function(id){
+  DB.tischPhase=id;
+  saveDB();
+  render();
+};
+
+window.mHalliSolo=function(idx){
+  const s=(DB.halliGalliSolos||[])[idx];
+  if(!s||s.done)return;
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">🎰 Pflicht-Solo</div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div class="u-av" style="width:44px;height:44px;font-size:1rem;margin:0 auto 8px">${esc(ini(s.player))}</div>
+      <div style="font-size:.92rem;color:var(--t1);font-weight:700">${esc(s.player)}</div>
+      <div style="font-size:.78rem;color:var(--t3);margin-top:3px">Welchen Solo spielt er/sie?</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      ${SOLO_TYPEN.map(t=>`
+        <button onclick="markSolo(${idx},'${t}')"
+          style="padding:13px;border-radius:var(--rs);font-size:.92rem;font-weight:700;
+            background:var(--gold-bg);border:1.5px solid var(--gold-bd);
+            color:var(--gold);cursor:pointer;transition:.15s">
+          🃏 ${t}-Solo
+        </button>`).join('')}
+    </div>
+    <button class="s-cancel" id="mc" style="width:100%">Abbrechen</button>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+};
+
+window.markSolo=function(idx,type){
+  const s=(DB.halliGalliSolos||[])[idx];
+  if(!s)return;
+  s.done=true; s.soloType=type;
+  DB.ereignisse=DB.ereignisse||[];
+  DB.ereignisse.push({
+    id:DB.nextId++,
+    date:new Date().toISOString().slice(0,10),
+    player:s.player,
+    type:'pflichtsolo',
+    soloType:type,
+    addedBy:ME
+  });
+  saveDB(`${s.player}: ${type}-Solo (Halli-Galli)`);
+  closeM();
+  render();
+};
 
 window.sTyp=function(t){
   document.getElementById('m-type').value=t;
@@ -2150,15 +2273,21 @@ function mSitzordnung(){
   roll();
   document.getElementById('ms-neu').onclick=roll;
   document.getElementById('ms-save').onclick=()=>{
+    const phase=DB.tischPhase||0;
     DB.sitzordnungen.push({
       id:DB.nextId++,
       date:new Date().toISOString().slice(0,10),
       seats:currentOrder,
-      savedBy:ME
+      savedBy:ME,
+      phase
     });
-    saveDB();
+    if(phase===2){
+      DB.halliGalliSolos=currentOrder.map(p=>({player:p,soloType:null,done:false}));
+    }
+    saveDB(`Sitzordnung ${PHASEN[phase].label} gespeichert`);
     document.getElementById('sitz-hint').textContent='✅ Gespeichert!';
     document.getElementById('ms-save').style.display='none';
+    render();
   };
 }
 
