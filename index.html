@@ -1431,7 +1431,7 @@ function vTisch(){
 
   // Halli-Galli Solo-Tracker
   let halliTracker='';
-  if(phase===2){
+  if(phase===2&&todaySitz){
     const solos=DB.halliGalliSolos||[];
     const done=solos.filter(s=>s.done).length;
     const total=solos.length;
@@ -2095,7 +2095,12 @@ function bindContent(){
   });
   document.getElementById('btn-sitz')?.addEventListener('click',mSitzordnung);
   document.querySelectorAll('[data-del-sitz]').forEach(b=>{
-    b.onclick=()=>{DB.sitzordnungen=DB.sitzordnungen.filter(x=>x.id!==+b.dataset.delSitz);saveDB();render();};
+    b.onclick=()=>{
+      const del=DB.sitzordnungen.find(x=>x.id===+b.dataset.delSitz);
+      DB.sitzordnungen=DB.sitzordnungen.filter(x=>x.id!==+b.dataset.delSitz);
+      if(del&&(del.phase||0)===2) DB.halliGalliSolos=[];
+      saveDB();render();
+    };
   });
   document.getElementById('btn-buch')?.addEventListener('click',mBuchung);
   document.getElementById('btn-wa')?.addEventListener('click',waExportKasse);
