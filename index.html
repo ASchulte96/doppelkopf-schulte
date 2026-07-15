@@ -828,7 +828,7 @@ function mkDB(){
     tischPhase:0,    // 0=Runde1, 1=NachEssen, 2=HalliGalli
     halliGalliSolos:[], // [{player,soloType,done}]
     gastgeberRot:['Matthias','Aloys','Franz','Georg'],
-    gastgeberOffset:1,
+    gastgeberOffset:0,
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -1140,11 +1140,11 @@ function vTermine(){
   </div>`;
 
   return`${vWeisheit()}${vHoroskop()}
-  ${vStrafenSection()}
   ${gastgeberBanner}
   <div class="sec">Kommende Termine</div>
   ${upcomingCards}
-  ${histSection}`;
+  ${histSection}
+  ${vStrafenSection()}`;
 }
 
 function vStrafenSection(){
