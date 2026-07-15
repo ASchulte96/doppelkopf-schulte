@@ -1110,7 +1110,7 @@ function vStrafenSection(){
 // ══ KASSE ════════════════════════════════════════════════
 function kassePrognose(){
   const kasse=DB.kasse;
-  if(kasse.length<3) return '';
+  if(!kasse.length) return '';
   const bal=kasse[kasse.length-1].balance;
 
   // Monatliche Netto-Werte berechnen
@@ -1122,7 +1122,7 @@ function kassePrognose(){
     else monthly[ym].aus+=b.betrag;
   });
   const mKeys=Object.keys(monthly).sort();
-  if(mKeys.length<2) return '';
+  // Auch mit nur 1 Monat Daten eine Prognose zeigen
   const avgIn=mKeys.reduce((s,m)=>s+monthly[m].ein,0)/mKeys.length;
   const avgOut=mKeys.reduce((s,m)=>s+monthly[m].aus,0)/mKeys.length;
   const avgNet=avgIn-avgOut;
