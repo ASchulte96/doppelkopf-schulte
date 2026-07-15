@@ -1368,7 +1368,7 @@ function lboard(data,icon,label,fmtFn,valCls=''){
 
 function vStatistik(){
   const st=computeStats();
-  const typeLabel={solo:'🃏 Solo',fehlwurf:'🤦 Fehlwurf',hochzeit:'💒 Hochzeit',pflichtsolo:'🏆 Pflicht-Solo'};
+  const typeLabel={solo:'🃏 Solo',hochzeit:'💒 Hochzeit',pflichtsolo:'🏆 Pflicht-Solo'};
   const logRows=[...DB.ereignisse].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`
     <div class="stat-row">
       <span class="stat-med" style="font-size:.75rem">${fmtS(e.date)}</span>
@@ -1409,7 +1409,6 @@ function vStatistik(){
   }).join('');
 
   return`<div class="stat-grid">
-    ${lboard(st.fehlwurf,'🤦','Fehlwürfe',v=>v+'×','red')}
     ${lboard(st.pflichtsolo,'🏆','Pflicht-Solo Siege',v=>v+'×')}
     <div class="stat-card wide">
       <div class="stat-head">💸 Meiste Strafen</div>
@@ -1965,7 +1964,6 @@ function mEreignis(){
     <div class="sf"><label>Ereignis</label>
       <select id="m-type">
         <option value="solo">Solo</option>
-        <option value="fehlwurf">Fehlwurf (Karten falsch ausgeteilt)</option>
         <option value="hochzeit">Hochzeit</option>
         <option value="pflichtsolo">Pflicht-Solo</option>
       </select>
