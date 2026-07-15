@@ -828,7 +828,7 @@ function mkDB(){
     tischPhase:0,    // 0=Runde1, 1=NachEssen, 2=HalliGalli
     halliGalliSolos:[], // [{player,soloType,done}]
     gastgeberRot:['Matthias','Aloys','Franz','Georg'],
-    gastgeberOffset:0,
+    gastgeberRef:{date:'2026-08-08',idx:2},
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -1122,9 +1122,9 @@ function vTermine(){
     </details>`:'';
 
   const rot=DB.gastgeberRot||['Matthias','Aloys','Franz','Georg'];
-  const offset=DB.gastgeberOffset||0;
-  const pastCount=DB.termine.filter(t=>t.date<today).length;
-  const idx=(pastCount+offset)%rot.length;
+  const ref=DB.gastgeberRef||{date:'2026-08-08',idx:2};
+  const passedSinceRef=DB.termine.filter(t=>t.date>=ref.date&&t.date<today).length;
+  const idx=(ref.idx+passedSinceRef)%rot.length;
   const aktuell=rot[idx];
   const naechster=rot[(idx+1)%rot.length];
   const nextTermin=upcoming[0];
