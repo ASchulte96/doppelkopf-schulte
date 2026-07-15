@@ -592,6 +592,11 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
       <span id="season-icon" style="font-size:.9rem;opacity:.75;line-height:1"></span>
     </div>
     <div class="tb-right">
+      <div id="online-badge" title="Gerade online" style="display:none;align-items:center;gap:4px;
+        background:var(--grn-bg);border:1px solid var(--grn-bd);border-radius:20px;
+        padding:2px 8px;font-size:.72rem;font-weight:700;color:var(--green);cursor:default">
+        👁 <span id="online-count">0</span>
+      </div>
       <div id="sync-dot" title="Cloud-Sync" style="width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;margin-right:2px;transition:background .4s"></div>
       <button class="admin-btn" id="theme-btn" title="Hell/Dunkel">☀</button>
       <button class="admin-btn" id="admin-btn" style="display:none" title="Admin-Panel">⚙</button>
@@ -630,7 +635,68 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 <script>
 // ══ CLOUD SYNC ═══════════════════════════════════════════
 const FB_URL='https://doppelkopf-schulte-default-rtdb.europe-west1.firebasedatabase.app/db.json';
+const FB_BASE='https://doppelkopf-schulte-default-rtdb.europe-west1.firebasedatabase.app';
 let syncTimer=null, syncing=false;
+
+// ── Presence (Online-Indikator) ──────────────────────────
+let _presTimer=null;
+async function presencePing(){
+  if(!ME)return;
+  try{await fetch(`${FB_BASE}/presence/${encodeURIComponent(ME)}.json`,{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ts:Date.now(),name:ME})
+  });}catch(e){}
+}
+async function presenceRead(){
+  try{
+    const r=await fetch(`${FB_BASE}/presence.json`);
+    if(!r.ok)return;
+    const raw=await r.json();
+    if(!raw||typeof raw!=='object')return;
+    const now=Date.now();
+    const online=Object.values(raw).filter(v=>v&&(now-(v.ts||0))<90000);
+    const badge=document.getElementById('online-badge');
+    const cnt=document.getElementById('online-count');
+    if(badge&&cnt){
+      cnt.textContent=online.length;
+      badge.style.display=online.length>0?'flex':'none';
+      badge.title=online.map(v=>v.name).join(', ')+' online';
+    }
+  }catch(e){}
+}
+function startPresence(){
+  presencePing(); presenceRead();
+  _presTimer=setInterval(()=>{presencePing();presenceRead();},30000);
+}
+function stopPresence(){
+  clearInterval(_presTimer);
+  if(!ME)return;
+  try{fetch(`${FB_BASE}/presence/${encodeURIComponent(ME)}.json`,{method:'DELETE'});}catch(e){}
+}
+window.addEventListener('beforeunload',stopPresence);
+
+// ── Admin-Panel Schreibschutz ────────────────────────────
+let _adminLockOwner=false;
+async function acquireAdminLock(){
+  try{
+    const r=await fetch(`${FB_BASE}/locks/adminPanel.json`);
+    const lock=r.ok?await r.json():null;
+    if(lock&&lock.user&&lock.user!==ME&&(Date.now()-(lock.ts||0))<30000){
+      return{ok:false,by:lock.user};
+    }
+    await fetch(`${FB_BASE}/locks/adminPanel.json`,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user:ME,ts:Date.now()})
+    });
+    _adminLockOwner=true;
+    return{ok:true};
+  }catch(e){return{ok:true};}
+}
+function releaseAdminLock(){
+  if(!_adminLockOwner)return;
+  _adminLockOwner=false;
+  try{fetch(`${FB_BASE}/locks/adminPanel.json`,{method:'DELETE'});}catch(e){}
+}
 
 async function syncPush(dbData){
   try{
@@ -654,7 +720,7 @@ async function syncPull(){
     const raw=fbFix(await r.json());
     if(!raw)return;
     // Firebase speichert leere Arrays als null → zurücksetzen
-    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln','sitzordnungen'].forEach(f=>{
+    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln','sitzordnungen','changelog'].forEach(f=>{
       if(!Array.isArray(raw[f]))raw[f]=raw[f]?Object.values(raw[f]):[];
     });
     const remote=raw;
@@ -715,8 +781,13 @@ async function hashPw(pw){
 // ══ STORAGE ══════════════════════════════════════════════
 const KEY='dk4db',MEK='dk4me';
 function loadDB(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):mkDB();}catch(e){return mkDB();}}
-function saveDB(){
+function saveDB(action){
   DB.version=(DB.version||0)+1;
+  if(action&&ME){
+    DB.changelog=DB.changelog||[];
+    DB.changelog.unshift({ts:Date.now(),user:ME,action});
+    if(DB.changelog.length>50)DB.changelog.length=50;
+  }
   try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
   syncPush(DB);
 }
@@ -742,6 +813,7 @@ function mkDB(){
       {id:2,date:'2026-06-13',desc:'Strafen Spielabend #1',type:'ein',betrag:3.5,balance:21.5,addedBy:''},
       {id:3,date:'2026-06-13',desc:'Getränke',type:'aus',betrag:12,balance:9.5,addedBy:''},
     ],
+    changelog:[],    // {ts,user,action}
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -856,13 +928,13 @@ async function doAuth(){
       const noAdmins=!DB.users.some(u=>u.isAdmin);
       DB.users.push({name,hash,isAdmin:isAlex||noAdmins&&false});
       if(isAlex) DB.users[DB.users.length-1].isAdmin=true;
-      saveDB();ME=name;saveMe(ME,true);startApp();
+      saveDB(`${name} hat sich registriert`);ME=name;saveMe(ME,true);startApp();startPresence();
     }else{
       const u=DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase()&&u.hash===hash);
       if(!u){aErr('Name oder Passwort falsch.');return;}
       // migrate: ensure Alex is always admin
       if(u.name.toLowerCase()==='alex'&&!u.isAdmin){u.isAdmin=true;saveDB();}
-      ME=u.name;saveMe(ME,stay);startApp();
+      ME=u.name;saveMe(ME,stay);startApp();startPresence();
     }
   }finally{
     btn.disabled=false;
@@ -1307,7 +1379,7 @@ function openM(html){
   el.innerHTML=`<div class="veil" id="veil">${html}</div>`;
   document.getElementById('veil').addEventListener('click',e=>{if(e.target===e.currentTarget)closeM();});
 }
-function closeM(){document.getElementById('modal').innerHTML='';}
+function closeM(){releaseAdminLock();document.getElementById('modal').innerHTML='';}
 
 function mTermin(t){
   const isEdit=!!t;
@@ -1331,14 +1403,17 @@ function mTermin(t){
     if(isEdit){
       const idx=DB.termine.findIndex(x=>x.id===t.id);
       if(idx>=0) DB.termine[idx]={...DB.termine[idx],date:d,time,ort};
+      saveDB(`Termin ${d} bearbeitet`);
     }else{
       DB.termine.push({id:DB.nextId++,date:d,time,ort,votes:{},addedBy:ME});
+      saveDB(`Termin am ${d} erstellt`);
     }
-    saveDB();closeM();render();
+    closeM();render();
   };
   if(isEdit) document.getElementById('m-del').onclick=()=>{
+    const del=DB.termine.find(x=>x.id===t.id);
     DB.termine=DB.termine.filter(x=>x.id!==t.id);
-    saveDB();closeM();render();
+    saveDB(del?`Termin am ${del.date} gelöscht`:'Termin gelöscht');closeM();render();
   };
 }
 
@@ -1372,7 +1447,7 @@ function mStrafe(prePlayer){
       desc:`Strafe: ${prePlayer} – ${text}`,
       type:'ein',betrag,
       balance:Math.round((prev+betrag)*100)/100,addedBy:ME});
-    saveDB();closeM();render();
+    saveDB(`Strafe für ${prePlayer}: ${text} (${betrag.toFixed(2)} €)`);closeM();render();
   }
 
   document.querySelectorAll('.schnell-regel').forEach(b=>{
@@ -1418,11 +1493,11 @@ function mBuchungEdit(b){
     if(!date||!desc||isNaN(betrag)||betrag<=0){alert('Alle Felder ausfüllen.');return;}
     const idx=DB.kasse.findIndex(x=>x.id===b.id);
     if(idx>=0) DB.kasse[idx]={...DB.kasse[idx],type,date,desc,betrag};
-    recalcBalances();saveDB();closeM();render();
+    recalcBalances();saveDB(`Buchung "${desc}" bearbeitet`);closeM();render();
   };
   document.getElementById('m-del').onclick=()=>{
     DB.kasse=DB.kasse.filter(x=>x.id!==b.id);
-    recalcBalances();saveDB();closeM();render();
+    recalcBalances();saveDB('Buchung gelöscht');closeM();render();
   };
 }
 
@@ -1451,7 +1526,7 @@ function mBuchung(){
     const prev=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
     DB.kasse.push({id:DB.nextId++,date,desc,type,betrag,
       balance:Math.round((prev+(type==='ein'?betrag:-betrag))*100)/100,addedBy:ME});
-    saveDB();closeM();render();
+    saveDB(`Buchung "${desc}" (${type==='ein'?'+':'-'}${betrag.toFixed(2)} €) hinzugefügt`);closeM();render();
   };
 }
 window.sTyp=function(t){
@@ -1601,7 +1676,26 @@ function mKategorie(katName){
 }
 
 // ══ ADMIN PANEL ═══════════════════════════════════════════
-function openAdminPanel(){
+async function openAdminPanel(){
+  // Schreibschutz: Lock anfordern
+  const lock=await acquireAdminLock();
+  if(!lock.ok){
+    openM(`<div class="sheet"><div class="s-drag"></div>
+      <div class="s-title">⚙ Admin-Panel</div>
+      <div style="text-align:center;padding:24px 12px">
+        <div style="font-size:2rem;margin-bottom:10px">🔒</div>
+        <div style="font-weight:700;color:var(--t1);margin-bottom:6px">Wird gerade bearbeitet</div>
+        <div style="font-size:.85rem;color:var(--t2)">
+          <strong style="color:var(--gold)">${esc(lock.by)}</strong> hat das Admin-Panel gerade geöffnet.<br>
+          Bitte warte kurz und versuche es dann erneut.
+        </div>
+      </div>
+      <div style="margin-top:12px"><button class="s-cancel" id="mc" style="width:100%">OK</button></div>
+    </div>`);
+    document.getElementById('mc').onclick=closeM;
+    return;
+  }
+
   const rows=DB.users.map(u=>{
     const role=u.role||(u.isAdmin?'admin':'spieler');
     const isMe=u.name===ME;
@@ -1628,13 +1722,29 @@ function openAdminPanel(){
         ${Object.entries(ROLLEN).map(([k,v])=>`<option value="${k}"${k===role?' selected':''}>${v.icon} ${v.label} — ${v.desc}</option>`).join('')}
       </select>`:''}
       ${!isMe&&role==='spieler'&&permChecks?`
-        <div style="background:var(--s3);border-radius:var(--rs);padding:8px 12px;border:1px solid var(--bd)">
-          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-            color:var(--t3);margin-bottom:6px">Einzelne Rechte</div>
-          ${permChecks}
-        </div>`:''}
+        <details style="background:var(--s3);border-radius:var(--rs);border:1px solid var(--bd)">
+          <summary style="padding:8px 12px;cursor:pointer;font-size:.78rem;font-weight:700;
+            text-transform:uppercase;letter-spacing:.08em;color:var(--t3);list-style:none;
+            display:flex;align-items:center;justify-content:space-between">
+            Einzelne Rechte
+            <span style="font-size:.9rem;color:var(--t3)">▸</span>
+          </summary>
+          <div style="padding:4px 12px 10px">${permChecks}</div>
+        </details>`:''}
     </div>`;
   }).join('');
+
+  // Changelog-Einträge
+  const cl=DB.changelog||[];
+  const clHtml=cl.length?cl.slice(0,50).map(e=>{
+    const d=new Date(e.ts);
+    const label=`${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    return`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:.8rem">
+      <span style="color:var(--t3);flex-shrink:0;min-width:72px">${label}</span>
+      <span style="color:var(--gold);flex-shrink:0">${esc(e.user)}</span>
+      <span style="color:var(--t2)">${esc(e.action)}</span>
+    </div>`;
+  }).join(''):'<div style="color:var(--t3);font-size:.82rem;padding:8px 0">Noch keine Einträge</div>';
 
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">⚙ Admin-Panel</div>
@@ -1642,19 +1752,27 @@ function openAdminPanel(){
       Rollen &amp; Berechtigungen verwalten
     </div>
     ${rows||'<div style="color:var(--t3);text-align:center;padding:20px">Keine Nutzer</div>'}
+    <details style="margin-top:16px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--bd)">
+      <summary style="padding:10px 14px;cursor:pointer;font-size:.82rem;font-weight:700;
+        color:var(--t2);list-style:none;display:flex;align-items:center;justify-content:space-between">
+        📋 Changelog <span style="color:var(--t3);font-size:.76rem">${cl.length} Einträge</span>
+      </summary>
+      <div style="padding:4px 14px 12px;max-height:220px;overflow-y:auto">${clHtml}</div>
+    </details>
     <div style="margin-top:12px"><button class="s-cancel" id="mc" style="width:100%">Schließen</button></div>
   </div>`);
 
-  document.getElementById('mc').onclick=closeM;
+  document.getElementById('mc').onclick=()=>{releaseAdminLock();closeM();};
 
   document.querySelectorAll('[data-role-user]').forEach(sel=>{
     sel.onchange=()=>{
       const u=DB.users.find(x=>x.name===sel.dataset.roleUser);
       if(!u)return;
+      const oldRole=u.role||(u.isAdmin?'admin':'spieler');
       u.role=sel.value;
       u.isAdmin=sel.value==='admin';
       if(sel.value!=='spieler') u.perms=[];
-      saveDB();
+      saveDB(`Rolle von ${u.name}: ${oldRole} → ${sel.value}`);
       openAdminPanel();
     };
   });
@@ -1666,7 +1784,8 @@ function openAdminPanel(){
       u.perms=u.perms||[];
       if(cb.checked){if(!u.perms.includes(cb.dataset.permKey))u.perms.push(cb.dataset.permKey);}
       else{u.perms=u.perms.filter(p=>p!==cb.dataset.permKey);}
-      saveDB();
+      const action=cb.checked?'aktiviert':'deaktiviert';
+      saveDB(`Recht "${PERM_LABELS[cb.dataset.permKey]||cb.dataset.permKey}" für ${u.name} ${action}`);
     };
   });
 
@@ -2088,7 +2207,7 @@ function mProfil(){
   </div>`);
 
   document.getElementById('profil-close').onclick=closeM;
-  document.getElementById('profil-logout').onclick=()=>{ME=null;saveMe(null);location.reload();};
+  document.getElementById('profil-logout').onclick=()=>{stopPresence();ME=null;saveMe(null);location.reload();};
   document.getElementById('notif-req')?.addEventListener('click',async()=>{
     const perm=await Notification.requestPermission();
     if(perm==='granted'){planSpieltag();render();}
