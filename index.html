@@ -1108,6 +1108,98 @@ function vStrafenSection(){
 }
 
 // ══ KASSE ════════════════════════════════════════════════
+function kassePrognose(){
+  const kasse=DB.kasse;
+  if(kasse.length<3) return '';
+  const bal=kasse[kasse.length-1].balance;
+
+  // Monatliche Netto-Werte berechnen
+  const monthly={};
+  kasse.forEach(b=>{
+    const ym=b.date.slice(0,7);
+    if(!monthly[ym])monthly[ym]={ein:0,aus:0};
+    if(b.type==='ein')monthly[ym].ein+=b.betrag;
+    else monthly[ym].aus+=b.betrag;
+  });
+  const mKeys=Object.keys(monthly).sort();
+  if(mKeys.length<2) return '';
+  const avgIn=mKeys.reduce((s,m)=>s+monthly[m].ein,0)/mKeys.length;
+  const avgOut=mKeys.reduce((s,m)=>s+monthly[m].aus,0)/mKeys.length;
+  const avgNet=avgIn-avgOut;
+
+  // Prognose-Punkte: alle 6 Monate bis 5 Jahre
+  const pts=[{m:0,v:bal}];
+  for(let m=6;m<=60;m+=6) pts.push({m,v:Math.round((bal+avgNet*m)*100)/100});
+
+  // SVG-Chart
+  const vals=pts.map(p=>p.v);
+  const minV=Math.min(...vals);
+  const maxV=Math.max(...vals);
+  const range=(maxV-minV)||1;
+  const W=280,H=72,PX=6,PY=6;
+  const cx=(p,i)=>PX+i*(W-2*PX)/(pts.length-1);
+  const cy=v=>PY+(1-(v-minV)/range)*(H-2*PY);
+  const polyPts=pts.map((p,i)=>`${cx(p,i)},${cy(p.v)}`).join(' ');
+  const fillPts=`${cx(pts[0],0)},${H} ${polyPts} ${cx(pts[pts.length-1],pts.length-1)},${H}`;
+
+  // Jahres-Labels (alle 12 Monate = 2 Punkte je Jahresschritt bei Abstand 6)
+  const trend=avgNet>=0;
+  const clr=trend?'var(--green)':'var(--burg-b)';
+
+  const yearRows=[1,2,3,4,5].map(y=>{
+    const v=Math.round((bal+avgNet*12*y)*100)/100;
+    const diff=v-bal;
+    const cls=diff>=0?'pos':'neg';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;
+      border-bottom:1px solid var(--bd);font-size:.82rem">
+      <span style="color:var(--t3)">+${y} Jahr${y>1?'e':''}</span>
+      <span style="font-weight:700;color:var(--t1)">${v>=0?'+':''}${euro(v)}</span>
+      <span class="${cls}" style="font-size:.78rem">${diff>=0?'▲':'▼'} ${euro(Math.abs(diff))}</span>
+    </div>`;
+  }).join('');
+
+  return`<div style="background:var(--s2);border-radius:var(--rs);border:1px solid var(--bd);
+    margin-bottom:16px;overflow:hidden">
+    <div style="padding:12px 14px 6px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:.82rem;font-weight:700;color:var(--t2)">📈 Kassenprognose</div>
+      <div style="font-size:.72rem;color:var(--t3)">Basis: Ø ${mKeys.length} Monate</div>
+    </div>
+    <div style="padding:0 14px 4px;display:flex;gap:16px">
+      <div style="font-size:.76rem;color:var(--t3)">Ø Einnahmen: <span style="color:var(--green)">${euro(avgIn)}/Mo.</span></div>
+      <div style="font-size:.76rem;color:var(--t3)">Ø Ausgaben: <span style="color:var(--burg-b)">${euro(avgOut)}/Mo.</span></div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="72" style="display:block;overflow:visible">
+      <defs>
+        <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${clr}" stop-opacity=".25"/>
+          <stop offset="100%" stop-color="${clr}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${fillPts}" fill="url(#pg)"/>
+      <polyline points="${polyPts}" fill="none" stroke="${clr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.filter((_,i)=>i>0&&(i%2===0||i===pts.length-1)).map((p,_,arr)=>{
+        const idx=pts.indexOf(p);
+        const x=cx(p,idx);
+        return`<circle cx="${x}" cy="${cy(p.v)}" r="3" fill="${clr}"/>`;
+      }).join('')}
+      <line x1="${cx(pts[0],0)}" y1="${PY}" x2="${cx(pts[0],0)}" y2="${H-PY}"
+        stroke="var(--bd)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="${cx(pts[0],0)+3}" y="${H-2}" font-size="8" fill="var(--t3)">Jetzt</text>
+      ${[2,4,6,8,10].map((idx,yi)=>{
+        if(idx>=pts.length)return'';
+        const x=cx(pts[idx],idx);
+        return`<text x="${x}" y="${H-2}" font-size="8" fill="var(--t3)" text-anchor="middle">+${yi+1}J</text>`;
+      }).join('')}
+    </svg>
+    <div style="padding:0 14px 12px">${yearRows}</div>
+    <div style="padding:6px 14px 10px;font-size:.74rem;color:var(--t3);
+      border-top:1px solid var(--bd);text-align:center">
+      ${trend?'📊 Trend positiv — Kasse wächst':'⚠️ Trend negativ — Kasse schrumpft'}
+      · Ø ${avgNet>=0?'+':''}${euro(avgNet)}/Monat
+    </div>
+  </div>`;
+}
+
 function vKasse(){
   const bal=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
   const cls=bal>0?'pos':bal<0?'neg':'z';
@@ -1138,6 +1230,7 @@ function vKasse(){
       📲 WhatsApp teilen
     </button>
   </div>
+  ${kassePrognose()}
   <div class="sec">Buchungshistorie</div>
   ${rows||'<div class="empty"><div class="empty-i">💶</div><p class="empty-t">Noch keine Buchungen.</p></div>'}`;
 }
