@@ -1409,6 +1409,14 @@ function vStatistik(){
   }).join('');
 
   return`<div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-head">🏆 Sieger-Rangliste</div>
+      ${siegRankRows||'<div class="stat-empty">Noch keine Sieger eingetragen</div>'}
+    </div>
+    <div class="stat-card">
+      <div class="stat-head">🐷 Sparschwein-Rangliste</div>
+      ${schweinRows||'<div class="stat-empty">Noch keine Einträge</div>'}
+    </div>
     ${lboard(st.pflichtsolo,'🏆','Pflicht-Solo Siege',v=>v+'×')}
     <div class="stat-card wide">
       <div class="stat-head">💸 Meiste Strafen</div>
@@ -1420,14 +1428,6 @@ function vStatistik(){
             <span class="stat-val red">${euro(val)}</span>
           </div>`).join('')
         :'<div class="stat-empty">Noch keine Strafen eingetragen</div>'}
-    </div>
-    <div class="stat-card wide">
-      <div class="stat-head">🏆 Sieger-Rangliste</div>
-      ${siegRankRows||'<div class="stat-empty">Noch keine Sieger eingetragen</div>'}
-    </div>
-    <div class="stat-card wide">
-      <div class="stat-head">🐷 Sparschwein-Rangliste</div>
-      ${schweinRows||'<div class="stat-empty">Noch keine Einträge</div>'}
     </div>
     <div class="stat-card wide">
       <div class="stat-head">📋 Ereignis-Protokoll</div>
