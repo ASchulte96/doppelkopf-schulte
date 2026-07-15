@@ -1431,12 +1431,16 @@ function vTisch(){
     currentView=`<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0">
       ${renderTableCompact(todaySitz.seats.slice(0,half),1)}
       ${renderTableCompact(todaySitz.seats.slice(half),2)}
-    </div>`;
+    </div>
+    ${canDo('sitzordnung')?`<div style="text-align:center;margin-bottom:4px">
+      <button class="del-btn" data-del-sitz="${todaySitz.id}" style="font-size:.72rem;padding:3px 10px">
+        ✕ Sitzordnung löschen
+      </button></div>`:''}`;
   }
 
   // Halli-Galli Solo-Tracker
   let halliTracker='';
-  if(phase===2&&todaySitz){
+  if(phase===2&&(DB.halliGalliSolos||[]).length){
     const solos=DB.halliGalliSolos||[];
     const done=solos.filter(s=>s.done).length;
     const total=solos.length;
@@ -1469,33 +1473,11 @@ function vTisch(){
     </div>`;
   }
 
-  // Verlauf (alle Phasen)
-  const history=[...DB.sitzordnungen].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
-  const histRows=history.map(s=>{
-    const p=PHASEN[s.phase||0]||PHASEN[0];
-    const half=Math.ceil(s.seats.length/2);
-    return`<div class="card" style="padding:12px 14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div>
-          <span style="font-size:.78rem;font-weight:700;color:var(--t2)">${fmtS(s.date)}</span>
-          <span style="margin-left:8px;font-size:.72rem;color:var(--t3)">${p.icon} ${p.label}</span>
-        </div>
-        ${canDo('sitzordnung')?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
-      </div>
-      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-        ${renderTableCompact(s.seats.slice(0,half),1)}
-        ${renderTableCompact(s.seats.slice(half),2)}
-      </div>
-    </div>`;
-  }).join('');
-
   return`${hinweis}
   <div style="display:flex;gap:6px;margin-bottom:14px">${pills}</div>
   ${currentView}
   ${halliTracker}
-  <button class="btn-sitz" id="btn-sitz">🎲 ${PHASEN[phase].label} würfeln</button>
-  <div class="sec">Verlauf</div>
-  ${histRows||'<div class="empty"><div class="empty-i">🎲</div><p class="empty-t">Noch keine Sitzordnungen gespeichert.</p></div>'}`;
+  <button class="btn-sitz" id="btn-sitz">🎲 ${PHASEN[phase].label} würfeln</button>`;
 }
 
 // ══ EVENTS ═══════════════════════════════════════════════
