@@ -814,6 +814,7 @@ function mkDB(){
       {id:3,date:'2026-06-13',desc:'Getränke',type:'aus',betrag:12,balance:9.5,addedBy:''},
     ],
     changelog:[],    // {ts,user,action}
+    kasseStart:0,    // Anfangsbestand (fließt nicht in Prognose-Trend ein)
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -1110,8 +1111,9 @@ function vStrafenSection(){
 // ══ KASSE ════════════════════════════════════════════════
 function kassePrognose(){
   const kasse=DB.kasse;
-  if(!kasse.length) return '';
-  const bal=kasse[kasse.length-1].balance;
+  if(!kasse.length && !DB.kasseStart) return '';
+  const buchBal=kasse.length?kasse[kasse.length-1].balance:0;
+  const bal=(DB.kasseStart||0)+buchBal;
 
   // Monatliche Netto-Werte berechnen
   const monthly={};
@@ -1201,7 +1203,8 @@ function kassePrognose(){
 }
 
 function vKasse(){
-  const bal=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+  const buchBal=DB.kasse.length?DB.kasse[DB.kasse.length-1].balance:0;
+  const bal=(DB.kasseStart||0)+buchBal;
   const cls=bal>0?'pos':bal<0?'neg':'z';
   const rows=[...DB.kasse].reverse().map(b=>`
     <div class="b-row">
@@ -1219,7 +1222,14 @@ function vKasse(){
   return`<div class="k-hero">
     <div class="k-lbl">Kassenstand</div>
     <div class="k-amt ${cls}">${bal>=0?'+':''}${euro(bal)}</div>
-    <div class="k-sub">${DB.kasse.length} Buchungen</div>
+    <div class="k-sub" style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">
+      <span>${DB.kasse.length} Buchungen</span>
+      ${DB.kasseStart?`<span style="color:var(--t3)">· Anfangsbestand ${euro(DB.kasseStart)}</span>`:''}
+      ${canDo('kasse')?`<button onclick="mKasseStart()" style="background:none;border:1px solid var(--bd);
+        border-radius:20px;padding:2px 8px;font-size:.72rem;color:var(--t3);cursor:pointer">
+        ${DB.kasseStart?'✎ Anfangsbestand':'+ Anfangsbestand'}
+      </button>`:''}
+    </div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:15px">
     <button class="btn-outline" id="btn-buch" style="flex:1">
@@ -1622,6 +1632,33 @@ function mBuchung(){
     saveDB(`Buchung "${desc}" (${type==='ein'?'+':'-'}${betrag.toFixed(2)} €) hinzugefügt`);closeM();render();
   };
 }
+function mKasseStart(){
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">💰 Anfangsbestand</div>
+    <div style="font-size:.82rem;color:var(--t2);text-align:center;margin-bottom:16px;line-height:1.5">
+      Der Anfangsbestand ist das Geld, das schon in der Kasse lag<br>
+      bevor ihr mit der App angefangen habt zu buchen.<br>
+      <span style="color:var(--t3);font-size:.76rem">Er fließt nicht in den Prognose-Trend ein.</span>
+    </div>
+    <div class="sf"><label>Betrag (€)</label>
+      <input type="number" id="m-ks" min="0" step="0.50" placeholder="0,00"
+        value="${DB.kasseStart||''}"/>
+    </div>
+    <div class="sa">
+      <button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">Speichern ✓</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  document.getElementById('ms').onclick=()=>{
+    const v=parseFloat(document.getElementById('m-ks').value);
+    if(isNaN(v)||v<0){alert('Bitte einen gültigen Betrag eingeben.');return;}
+    DB.kasseStart=Math.round(v*100)/100;
+    saveDB(`Anfangsbestand auf ${euro(DB.kasseStart)} gesetzt`);
+    closeM();render();
+  };
+}
+
 window.sTyp=function(t){
   document.getElementById('m-type').value=t;
   document.getElementById('t-ein').className='ttgl'+(t==='ein'?' ein':'');
