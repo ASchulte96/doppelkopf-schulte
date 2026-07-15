@@ -1098,18 +1098,7 @@ function vTermine(){
           <span class="tv may"><span class="tv-d"></span>${may} Vielleicht</span>
           <span class="tv nein"><span class="tv-d"></span>${nein} Nein</span>
         </div>
-        ${isPast?(()=>{
-        const as=(DB.abendSieger||[]).find(x=>x.terminId===t.id);
-        if(as){
-          return`<div class="vgrid">${chips}</div>
-          <div style="margin-top:8px;padding:10px 12px;background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:var(--rs)">
-            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:4px">🏆 Sieger des Abends</div>
-            <div style="font-size:.9rem;font-weight:700;color:var(--gold)">${as.sieger.map(esc).join(', ')}</div>
-            <div style="font-size:.75rem;color:var(--t3);margin-top:3px">🐷 Sparschwein: <strong style="color:var(--t2)">${esc(as.sparschwein)}</strong></div>
-          </div>`;
-        }
-        return`<div class="vgrid">${chips}</div>${(canDo('termine')||canDo('kasse'))?`<button onclick="mSiegerEintragen(${t.id})" style="margin-top:8px;width:100%;background:var(--s3);border:1px solid var(--bd);color:var(--t2);border-radius:var(--rs);padding:8px;font-size:.8rem;cursor:pointer">🏆 Sieger eintragen</button>`:''}`;
-      })():`<div class="t-side">
+        ${isPast?`<div class="vgrid">${chips}</div>`:`<div class="t-side">
           <div class="vgrid">${chips}</div>
           <div class="vrow">
             <button class="vb${myV==='ja'?' ja':''}" data-vote="ja" data-tid="${t.id}">✓ Ja</button>
@@ -1117,6 +1106,16 @@ function vTermine(){
             <button class="vb${myV==='nein'?' nein':''}" data-vote="nein" data-tid="${t.id}">✗ Nein</button>
           </div>
         </div>`}
+        ${(()=>{
+          const as=(DB.abendSieger||[]).find(x=>x.terminId===t.id);
+          if(as) return`<div style="margin-top:8px;padding:10px 12px;background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:var(--rs)">
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:4px">🏆 Sieger des Abends</div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--gold)">${as.sieger.map(esc).join(', ')}</div>
+            <div style="font-size:.75rem;color:var(--t3);margin-top:3px">🐷 Sparschwein: <strong style="color:var(--t2)">${esc(as.sparschwein)}</strong></div>
+          </div>`;
+          if(canDo('termine')||canDo('kasse')) return`<button onclick="mSiegerEintragen(${t.id})" style="margin-top:8px;width:100%;background:var(--s3);border:1px solid var(--bd);color:var(--t2);border-radius:var(--rs);padding:8px;font-size:.8rem;cursor:pointer">🏆 Sieger eintragen</button>`;
+          return'';
+        })()}
       </div>
     </div>`;
   }
