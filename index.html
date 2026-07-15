@@ -1109,7 +1109,13 @@ function vTermine(){
         ${(()=>{
           const as=(DB.abendSieger||[]).find(x=>x.terminId===t.id);
           if(as) return`<div style="margin-top:8px;padding:10px 12px;background:var(--gold-bg);border:1px solid var(--gold-bd);border-radius:var(--rs)">
-            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:4px">🏆 Sieger des Abends</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">🏆 Sieger des Abends</div>
+              ${canDo('termine')?`<div style="display:flex;gap:4px">
+                <button class="rg-act" onclick="mSiegerEintragen(${t.id})">✎</button>
+                <button class="del-btn" data-del-sieger="${t.id}">✕</button>
+              </div>`:''}
+            </div>
             <div style="font-size:.9rem;font-weight:700;color:var(--gold)">${as.sieger.map(esc).join(', ')}</div>
             <div style="font-size:.75rem;color:var(--t3);margin-top:3px">🐷 Sparschwein: <strong style="color:var(--t2)">${esc(as.sparschwein)}</strong></div>
           </div>`;
@@ -1370,10 +1376,22 @@ function vStatistik(){
       <span class="stat-val" style="font-size:.78rem;color:var(--t2)">${typeLabel[e.type]||e.type}${e.type==='pflichtsolo'?(e.won?' ✓':' ✗'):''}</span>
       ${canDo('ereignisse')?`<button class="del-btn" data-del-ereignis="${e.id}" title="Löschen">✕</button>`:''}
     </div>`).join('');
+  const siegRows=(DB.abendSieger||[]).slice().sort((a,b)=>{
+    const ta=DB.termine.find(t=>t.id===a.terminId);
+    const tb=DB.termine.find(t=>t.id===b.terminId);
+    return (tb?.date||'').localeCompare(ta?.date||'');
+  }).map(as=>{
+    const t=DB.termine.find(t=>t.id===as.terminId);
+    return`<div class="stat-row">
+      <span class="stat-med" style="font-size:.75rem">${t?fmtS(t.date):''}</span>
+      <span class="stat-nm">${as.sieger.map(esc).join(', ')}</span>
+      <span class="stat-val" style="color:var(--t3);font-size:.78rem">🐷 ${esc(as.sparschwein)}</span>
+      ${canDo('termine')?`<button class="del-btn" data-del-sieger="${as.terminId}" title="Löschen">✕</button>`:''}
+    </div>`;
+  }).join('');
+
   return`<div class="stat-grid">
-    ${lboard(st.solos,'🃏','Meiste Solos',v=>v+'×')}
     ${lboard(st.fehlwurf,'🤦','Fehlwürfe',v=>v+'×','red')}
-    ${lboard(st.hochzeit,'💒','Hochzeiten',v=>v+'×')}
     ${lboard(st.pflichtsolo,'🏆','Pflicht-Solo Siege',v=>v+'×')}
     <div class="stat-card wide">
       <div class="stat-head">💸 Meiste Strafen</div>
@@ -1385,6 +1403,10 @@ function vStatistik(){
             <span class="stat-val red">${euro(val)}</span>
           </div>`).join('')
         :'<div class="stat-empty">Noch keine Strafen eingetragen</div>'}
+    </div>
+    <div class="stat-card wide">
+      <div class="stat-head">🏆 Sieger des Abends</div>
+      ${siegRows||'<div class="stat-empty">Noch keine Sieger eingetragen</div>'}
     </div>
     <div class="stat-card wide">
       <div class="stat-head">📋 Ereignis-Protokoll</div>
@@ -1842,12 +1864,13 @@ window.setTischPhase=function(id){
 
 window.mSiegerEintragen=function(terminId){
   const spieler=DB.users.map(u=>u.name);
+  const existing=(DB.abendSieger||[]).find(x=>x.terminId===terminId);
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">🏆 Sieger des Abends</div>
-    <div style="font-size:.83rem;color:var(--t2);margin-bottom:12px">Wer hat heute gewonnen? (Mehrfachauswahl möglich)</div>
+    <div style="font-size:.83rem;color:var(--t2);margin-bottom:12px">Wer hat gewonnen? (Mehrfachauswahl möglich)</div>
     <div id="sieger-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
       ${spieler.map(n=>`<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s3);border-radius:var(--rs);cursor:pointer">
-        <input type="checkbox" value="${esc(n)}" style="width:18px;height:18px;accent-color:var(--gold)">
+        <input type="checkbox" value="${esc(n)}"${existing&&existing.sieger.includes(n)?' checked':''} style="width:18px;height:18px;accent-color:var(--gold)">
         <span style="font-size:.93rem;font-weight:600">${esc(n)}</span>
       </label>`).join('')}
     </div>
@@ -2348,6 +2371,9 @@ function bindContent(){
   });
   document.querySelectorAll('[data-del-event]').forEach(b=>{
     b.onclick=()=>{DB.veranstaltungen=DB.veranstaltungen.filter(x=>x.id!==+b.dataset.delEvent);saveDB();render();};
+  });
+  document.querySelectorAll('[data-del-sieger]').forEach(b=>{
+    b.onclick=()=>{DB.abendSieger=(DB.abendSieger||[]).filter(x=>x.terminId!==+b.dataset.delSieger);saveDB('Sieger gelöscht');render();};
   });
 }
 
