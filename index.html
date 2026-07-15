@@ -972,6 +972,30 @@ function startApp(){
   render();
   startSync();
   requestNotifPermission();
+  initSwipe();
+}
+
+function initSwipe(){
+  const TABS=['termine','regeln','kasse','statistik','events','tisch'];
+  let tx=0,ty=0;
+  const app=document.getElementById('app');
+  app.addEventListener('touchstart',e=>{
+    if(document.getElementById('modal').children.length)return;
+    tx=e.touches[0].clientX;
+    ty=e.touches[0].clientY;
+  },{passive:true});
+  app.addEventListener('touchend',e=>{
+    if(document.getElementById('modal').children.length)return;
+    const dx=e.changedTouches[0].clientX-tx;
+    const dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.5)return;
+    const idx=TABS.indexOf(DB.tab);
+    const next=dx<0?idx+1:idx-1;
+    if(next<0||next>=TABS.length)return;
+    DB.tab=TABS[next];
+    saveDB();
+    render();
+  },{passive:true});
 }
 
 function requestNotifPermission(){
