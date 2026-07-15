@@ -515,6 +515,10 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--t1);
 .schnell-regel:hover,.schnell-regel:active{border-color:var(--gold-bd);background:var(--gold-bg)}
 .sr-text{font-size:.86rem;color:var(--t1);flex:1;line-height:1.3}
 .sr-amt{font-size:.92rem;font-weight:800;color:var(--gold);white-space:nowrap;flex-shrink:0}
+@keyframes slideInFwd{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInBwd{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:translateX(0)}}
+.slide-fwd{animation:slideInFwd .2s ease-out both}
+.slide-bwd{animation:slideInBwd .2s ease-out both}
 </style>
 
 <!-- AUTH -->
@@ -1011,7 +1015,15 @@ function notify(title,body){
   try{new Notification(title,{body,icon:'https://aschulte96.github.io/doppelkopf-schulte/favicon.ico'});}catch(e){}
 }
 
+const TAB_ORDER=['termine','regeln','kasse','statistik','events','tisch'];
+let _prevTab=null;
 function render(){
+  const slideDir=(()=>{
+    if(!_prevTab||_prevTab===DB.tab)return null;
+    const pi=TAB_ORDER.indexOf(_prevTab),ni=TAB_ORDER.indexOf(DB.tab);
+    return ni>pi?'fwd':'bwd';
+  })();
+  _prevTab=DB.tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===DB.tab));
   const fabAreaMap={termine:'termine',kasse:'kasse',regeln:'regeln',statistik:'ereignisse',events:'veranstaltungen',tisch:'sitzordnung'};
   document.getElementById('fab').hidden=!canDo(fabAreaMap[DB.tab]||'__none__');
@@ -1032,6 +1044,11 @@ function render(){
       users: ${Array.isArray(DB.users)?DB.users.length+' Einträge':typeof DB.users}<br>
       strafen: ${Array.isArray(DB.strafen)?DB.strafen.length+' Einträge':typeof DB.strafen}
     </div>`;
+  }
+  if(slideDir){
+    c.classList.remove('slide-fwd','slide-bwd');
+    void c.offsetWidth;
+    c.classList.add('slide-'+slideDir);
   }
   bindContent();
 }
