@@ -1376,6 +1376,15 @@ function vStatistik(){
       <span class="stat-val" style="font-size:.78rem;color:var(--t2)">${typeLabel[e.type]||e.type}${e.type==='pflichtsolo'?(e.won?' ✓':' ✗'):''}</span>
       ${canDo('ereignisse')?`<button class="del-btn" data-del-ereignis="${e.id}" title="Löschen">✕</button>`:''}
     </div>`).join('');
+  const siegWins={};
+  (DB.abendSieger||[]).forEach(as=>as.sieger.forEach(n=>{siegWins[n]=(siegWins[n]||0)+1;}));
+  const siegRankRows=Object.entries(siegWins).sort((a,b)=>b[1]-a[1]).map(([name,count],i)=>`
+    <div class="stat-row">
+      <span class="stat-med">${['🥇','🥈','🥉'][i]||i+1+'.'}</span>
+      <span class="stat-nm">${esc(name)}</span>
+      <span class="stat-val" style="color:var(--gold);font-weight:800">${count}×</span>
+    </div>`).join('');
+
   const siegRows=(DB.abendSieger||[]).slice().sort((a,b)=>{
     const ta=DB.termine.find(t=>t.id===a.terminId);
     const tb=DB.termine.find(t=>t.id===b.terminId);
@@ -1405,7 +1414,11 @@ function vStatistik(){
         :'<div class="stat-empty">Noch keine Strafen eingetragen</div>'}
     </div>
     <div class="stat-card wide">
-      <div class="stat-head">🏆 Sieger des Abends</div>
+      <div class="stat-head">🏆 Sieger-Rangliste</div>
+      ${siegRankRows||'<div class="stat-empty">Noch keine Sieger eingetragen</div>'}
+    </div>
+    <div class="stat-card wide">
+      <div class="stat-head">📅 Sieger des Abends</div>
       ${siegRows||'<div class="stat-empty">Noch keine Sieger eingetragen</div>'}
     </div>
     <div class="stat-card wide">
