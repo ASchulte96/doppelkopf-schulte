@@ -720,7 +720,7 @@ async function syncPull(){
     const raw=fbFix(await r.json());
     if(!raw)return;
     // Firebase speichert leere Arrays als null → zurücksetzen
-    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln','sitzordnungen','changelog'].forEach(f=>{
+    ['users','termine','kasse','strafen','ereignisse','veranstaltungen','kategorien','regeln','sitzordnungen','changelog','halliGalliSolos'].forEach(f=>{
       if(!Array.isArray(raw[f]))raw[f]=raw[f]?Object.values(raw[f]):[];
     });
     const remote=raw;
@@ -1369,6 +1369,11 @@ function renderTableCompact(group,tableNum){
 function vTisch(){
   const today=new Date().toISOString().slice(0,10);
   const phase=DB.tischPhase||0;
+  // Veraltete Solos löschen wenn keine HG-Sitzordnung von heute existiert
+  if((DB.halliGalliSolos||[]).length&&
+     !DB.sitzordnungen.some(s=>s.date===today&&(s.phase||0)===2)){
+    DB.halliGalliSolos=[];
+  }
   const naechster=[...DB.termine].filter(t=>t.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
 
   // Hinweis-Banner
@@ -2096,9 +2101,10 @@ function bindContent(){
   document.getElementById('btn-sitz')?.addEventListener('click',mSitzordnung);
   document.querySelectorAll('[data-del-sitz]').forEach(b=>{
     b.onclick=()=>{
-      const del=DB.sitzordnungen.find(x=>x.id===+b.dataset.delSitz);
       DB.sitzordnungen=DB.sitzordnungen.filter(x=>x.id!==+b.dataset.delSitz);
-      if(del&&(del.phase||0)===2) DB.halliGalliSolos=[];
+      const tod=new Date().toISOString().slice(0,10);
+      if(!DB.sitzordnungen.some(s=>s.date===tod&&(s.phase||0)===2))
+        DB.halliGalliSolos=[];
       saveDB();render();
     };
   });
