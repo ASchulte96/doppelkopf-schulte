@@ -1,6 +1,12 @@
 
 <title>DoppelKopf Schulte</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#174D22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DK Schulte">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
 <style>
 @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
@@ -1721,6 +1727,44 @@ function mKasseStart(){
   };
 }
 
+function exportDB(){
+  const json=JSON.stringify(DB,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`dk-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importDB(){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='.json,application/json';
+  input.onchange=e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!Array.isArray(data.users)||!Array.isArray(data.termine))
+          throw new Error('Keine gültige Backup-Datei.');
+        if(!confirm(`Backup laden und aktuelle Daten ersetzen?\n\n${data.users.length} Spieler, ${data.termine.length} Termine`))return;
+        data.version=(data.version||0)+1;
+        DB=data;
+        try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+        syncPush(DB);
+        render();
+        closeM();
+      }catch(err){alert('Fehler: '+err.message);}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
 window.setTischPhase=function(id){
   DB.tischPhase=id;
   saveDB();
@@ -1999,7 +2043,19 @@ async function openAdminPanel(){
       </summary>
       <div style="padding:4px 14px 12px;max-height:220px;overflow-y:auto">${clHtml}</div>
     </details>
-    <div style="margin-top:12px"><button class="s-cancel" id="mc" style="width:100%">Schließen</button></div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+        color:var(--t3);margin-bottom:8px">💾 Datensicherung</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="exportDB()" style="flex:1;padding:9px;border-radius:var(--rs);
+          background:var(--s3);border:1.5px solid var(--bd);color:var(--t2);
+          font-size:.82rem;cursor:pointer">⬇ Export</button>
+        <button onclick="importDB()" style="flex:1;padding:9px;border-radius:var(--rs);
+          background:var(--burg-bg);border:1.5px solid var(--burg-bd);color:var(--burg-b);
+          font-size:.82rem;cursor:pointer">⬆ Import</button>
+      </div>
+    </div>
+    <div style="margin-top:10px"><button class="s-cancel" id="mc" style="width:100%">Schließen</button></div>
   </div>`);
 
   document.getElementById('mc').onclick=()=>{releaseAdminLock();closeM();};
