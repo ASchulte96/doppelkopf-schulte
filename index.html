@@ -1998,6 +1998,7 @@ async function openAdminPanel(){
           <div class="adm-nm">${esc(u.name)}${isMe?'<span style="font-size:.68rem;color:var(--t3);margin-left:5px">Du</span>':''}</div>
           <div style="font-size:.76rem;color:var(--t3)">${roleBadge.icon} ${roleBadge.label} · ${roleBadge.desc}</div>
         </div>
+        <button class="adm-btn" data-rename-user="${esc(u.name)}" title="Umbenennen">✎</button>
         <button class="adm-btn" data-reset-user="${esc(u.name)}" title="Passwort zurücksetzen">🔑</button>
       </div>
       ${!isMe?`<select data-role-user="${esc(u.name)}"
@@ -2085,9 +2086,64 @@ async function openAdminPanel(){
     };
   });
 
+  document.querySelectorAll('[data-rename-user]').forEach(btn=>{
+    btn.onclick=()=>mRenameUser(btn.dataset.renameUser);
+  });
   document.querySelectorAll('[data-reset-user]').forEach(btn=>{
     btn.onclick=()=>mResetPw(btn.dataset.resetUser);
   });
+}
+
+function mRenameUser(oldName){
+  openM(`<div class="sheet"><div class="s-drag"></div>
+    <div class="s-title">✎ Spieler umbenennen</div>
+    <div style="font-size:.82rem;color:var(--t2);text-align:center;margin-bottom:16px">
+      Neuer Name für <strong style="color:var(--t1)">${esc(oldName)}</strong><br>
+      <span style="font-size:.74rem;color:var(--t3)">Alle Einträge werden automatisch aktualisiert.</span>
+    </div>
+    <div class="sf"><label>Neuer Name</label>
+      <input type="text" id="m-newname" value="${esc(oldName)}" autocomplete="off"/>
+    </div>
+    <div class="sa">
+      <button class="s-cancel" id="mc">Abbrechen</button>
+      <button class="s-save" id="ms">Umbenennen ✓</button>
+    </div>
+  </div>`);
+  document.getElementById('mc').onclick=closeM;
+  const inp=document.getElementById('m-newname');
+  inp.select();
+  document.getElementById('ms').onclick=()=>{
+    const newName=inp.value.trim();
+    if(!newName){alert('Name darf nicht leer sein.');return;}
+    if(newName===oldName){closeM();return;}
+    if(DB.users.some(u=>u.name.toLowerCase()===newName.toLowerCase())){
+      alert('Dieser Name ist bereits vergeben.');return;
+    }
+    // Alle verknüpften Felder aktualisieren
+    const u=DB.users.find(u=>u.name===oldName);
+    if(u) u.name=newName;
+    DB.strafen.forEach(s=>{if(s.player===oldName)s.player=newName;if(s.addedBy===oldName)s.addedBy=newName;});
+    DB.ereignisse.forEach(e=>{if(e.player===oldName)e.player=newName;if(e.addedBy===oldName)e.addedBy=newName;});
+    DB.kasse.forEach(b=>{if(b.addedBy===oldName)b.addedBy=newName;});
+    DB.termine.forEach(t=>{
+      if(t.addedBy===oldName)t.addedBy=newName;
+      if(t.votes&&t.votes[oldName]!==undefined){
+        t.votes[newName]=t.votes[oldName];
+        delete t.votes[oldName];
+      }
+    });
+    DB.veranstaltungen.forEach(v=>{if(v.addedBy===oldName)v.addedBy=newName;});
+    DB.sitzordnungen.forEach(s=>{
+      if(s.savedBy===oldName)s.savedBy=newName;
+      s.seats=s.seats.map(n=>n===oldName?newName:n);
+    });
+    (DB.halliGalliSolos||[]).forEach(s=>{if(s.player===oldName)s.player=newName;});
+    (DB.changelog||[]).forEach(c=>{if(c.user===oldName)c.user=newName;});
+    if(ME===oldName){ME=newName;saveMe(newName,true);}
+    saveDB(`${oldName} umbenannt zu ${newName}`);
+    closeM();
+    openAdminPanel();
+  };
 }
 
 function mResetPw(name){
