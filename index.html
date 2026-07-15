@@ -1108,7 +1108,7 @@ function vTermine(){
             <div style="font-size:.75rem;color:var(--t3);margin-top:3px">🐷 Sparschwein: <strong style="color:var(--t2)">${esc(as.sparschwein)}</strong></div>
           </div>`;
         }
-        return`<div class="vgrid">${chips}</div>${canDo('termine')?`<button onclick="mSiegerEintragen(${t.id})" style="margin-top:8px;width:100%;background:var(--s3);border:1px solid var(--bd);color:var(--t2);border-radius:var(--rs);padding:8px;font-size:.8rem;cursor:pointer">🏆 Sieger eintragen</button>`:''}`;
+        return`<div class="vgrid">${chips}</div>${(canDo('termine')||canDo('kasse'))?`<button onclick="mSiegerEintragen(${t.id})" style="margin-top:8px;width:100%;background:var(--s3);border:1px solid var(--bd);color:var(--t2);border-radius:var(--rs);padding:8px;font-size:.8rem;cursor:pointer">🏆 Sieger eintragen</button>`:''}`;
       })():`<div class="t-side">
           <div class="vgrid">${chips}</div>
           <div class="vrow">
