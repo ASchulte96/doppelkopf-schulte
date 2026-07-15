@@ -828,7 +828,7 @@ function mkDB(){
     tischPhase:0,    // 0=Runde1, 1=NachEssen, 2=HalliGalli
     halliGalliSolos:[], // [{player,soloType,done}]
     gastgeberRot:['Matthias','Aloys','Franz','Georg'],
-    gastgeberIdx:2,
+    gastgeberOffset:1,
     strafen:[],      // {id,date,player,grund,betrag,addedBy}
     ereignisse:[],   // {id,date,player,type,won,addedBy} type: solo|fehlwurf|hochzeit|pflichtsolo
     veranstaltungen:[
@@ -1122,17 +1122,20 @@ function vTermine(){
     </details>`:'';
 
   const rot=DB.gastgeberRot||['Matthias','Aloys','Franz','Georg'];
-  const idx=(DB.gastgeberIdx||0)%rot.length;
+  const offset=DB.gastgeberOffset||0;
+  const pastCount=DB.termine.filter(t=>t.date<today).length;
+  const idx=(pastCount+offset)%rot.length;
   const aktuell=rot[idx];
   const naechster=rot[(idx+1)%rot.length];
+  const nextTermin=upcoming[0];
   const gastgeberBanner=`<div style="background:var(--s2);border:1px solid var(--gold-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px">🏠 Nächster Gastgeber</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div>
-        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:3px">🏠 Nächster Gastgeber</div>
         <div style="font-size:1.15rem;font-weight:800;color:var(--gold)">${esc(aktuell)}</div>
         <div style="font-size:.75rem;color:var(--t3);margin-top:2px">Danach: ${esc(naechster)}</div>
       </div>
-      ${canDo('termine')?`<button onclick="mGastgeberWeiter()" style="background:var(--gold-bg);border:1px solid var(--gold-bd);color:var(--gold);border-radius:var(--rs);padding:7px 13px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap">✓ War dran</button>`:''}
+      ${nextTermin?`<div style="text-align:right;font-size:.75rem;color:var(--t3)">Nächster Termin<br><span style="color:var(--t2);font-weight:700">${esc(fmtD(nextTermin.date))}</span></div>`:''}
     </div>
   </div>`;
 
@@ -1830,15 +1833,6 @@ window.setTischPhase=function(id){
   render();
 };
 
-window.mGastgeberWeiter=function(){
-  const rot=DB.gastgeberRot||['Matthias','Aloys','Franz','Georg'];
-  const idx=(DB.gastgeberIdx||0)%rot.length;
-  const war=rot[idx];
-  DB.gastgeberIdx=(idx+1)%rot.length;
-  const naechster=rot[DB.gastgeberIdx];
-  saveDB(`Gastgeber: ${war} war dran → jetzt ${naechster}`);
-  render();
-};
 window.mHalliSolo=function(idx){
   const s=(DB.halliGalliSolos||[])[idx];
   if(!s||s.done)return;
