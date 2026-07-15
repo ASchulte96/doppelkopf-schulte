@@ -781,8 +781,34 @@ function ini(n){return(n||'').trim().split(/\s+/).map(p=>p[0]||'').join('').toUp
 function fmtD(d){try{return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}catch(e){return d;}}
 function fmtS(d){try{return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){return d;}}
 function euro(n){return(+n||0).toFixed(2).replace('.',',')+' €';}
-function isAdmin(name){return DB.users.find(u=>u.name===name)?.isAdmin||false;}
+function isAdmin(name){
+  const u=DB.users.find(u=>u.name===name);
+  if(!u)return false;
+  return u.role==='admin'||u.isAdmin||false;
+}
 function meIsAdmin(){return isAdmin(ME);}
+
+// area: 'termine'|'kasse'|'strafen'|'regeln'|'ereignisse'|'sitzordnung'|'veranstaltungen'
+function canDo(area){
+  const u=DB.users.find(u=>u.name===ME);
+  if(!u)return false;
+  const role=u.role||(u.isAdmin?'admin':'spieler');
+  if(role==='admin')return true;
+  if(area==='kasse'&&role==='kassenwart')return true;
+  return (u.perms||[]).includes(area);
+}
+
+const ROLLEN={
+  spieler: {label:'Spieler',icon:'🎴',desc:'Leserechte + Termine abstimmen'},
+  kassenwart:{label:'Kassenwart',icon:'💰',desc:'+ Vollzugriff Kasse'},
+  admin:   {label:'Admin',icon:'👑',desc:'Vollzugriff auf alles'},
+};
+const PERM_LABELS={
+  termine:'Termine verwalten',strafen:'Strafen verwalten',
+  kasse:'Kasse verwalten',regeln:'Regeln verwalten',
+  ereignisse:'Ereignisse verwalten',sitzordnung:'Sitzordnung speichern',
+  veranstaltungen:'Veranstaltungen verwalten',
+};
 
 // ══ AUTH ═════════════════════════════════════════════════
 let aMode='login';
@@ -875,7 +901,8 @@ function notify(title,body){
 
 function render(){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===DB.tab));
-  document.getElementById('fab').hidden=false;
+  const fabAreaMap={termine:'termine',kasse:'kasse',regeln:'regeln',statistik:'ereignisse',events:'veranstaltungen',tisch:'sitzordnung'};
+  document.getElementById('fab').hidden=!canDo(fabAreaMap[DB.tab]||'__none__');
   const c=document.getElementById('content');
   try{
     if(DB.tab==='termine')   c.innerHTML=vTermine();
@@ -927,7 +954,7 @@ function vTermine(){
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
           ${!isPast&&i===0?'<span class="badge b-next">Nächster</span>':''}
           ${isPast?'<span class="badge" style="background:rgba(255,255,255,.07);color:var(--t3)">Vergangen</span>':''}
-          ${meIsAdmin()?`<div style="display:flex;gap:5px">
+          ${canDo('termine')?`<div style="display:flex;gap:5px">
             <button class="rg-act" data-edit-termin="${t.id}">✎</button>
             <button class="del-btn" data-del-termin="${t.id}">✕</button>
           </div>`:''}
@@ -988,7 +1015,7 @@ function vStrafenSection(){
         <span class="straf-detail-date">${fmtS(s.date)}</span>
         <span class="straf-detail-txt">${esc(s.grund)}</span>
         <span class="straf-detail-amt">${euro(s.betrag)}</span>
-        ${meIsAdmin()?`<button class="del-btn" data-del-strafe="${s.id}" title="Löschen">✕</button>`:''}
+        ${canDo('strafen')?`<button class="del-btn" data-del-strafe="${s.id}" title="Löschen">✕</button>`:''}
       </div>`).join('');
     return`<div class="straf-row" style="flex-wrap:wrap">
       <div class="straf-av">${esc(ini(p.name))}</div>
@@ -1020,7 +1047,7 @@ function vKasse(){
         ${b.addedBy?`<div class="b-by">von ${esc(b.addedBy)}</div>`:''}
       </div>
       <div class="b-amt ${b.type==='ein'?'pos':'neg'}">${b.type==='ein'?'+':'−'}${euro(b.betrag)}</div>
-      ${meIsAdmin()?`<div style="display:flex;gap:3px;flex-shrink:0">
+      ${canDo('kasse')?`<div style="display:flex;gap:3px;flex-shrink:0">
         <button class="rg-act" data-edit-buch="${b.id}">✎</button>
         <button class="del-btn" data-del-buch="${b.id}">✕</button>
       </div>`:''}
@@ -1082,7 +1109,7 @@ function vStatistik(){
       <span class="stat-med" style="font-size:.75rem">${fmtS(e.date)}</span>
       <span class="stat-nm">${esc(e.player)}</span>
       <span class="stat-val" style="font-size:.78rem;color:var(--t2)">${typeLabel[e.type]||e.type}${e.type==='pflichtsolo'?(e.won?' ✓':' ✗'):''}</span>
-      ${meIsAdmin()?`<button class="del-btn" data-del-ereignis="${e.id}" title="Löschen">✕</button>`:''}
+      ${canDo('ereignisse')?`<button class="del-btn" data-del-ereignis="${e.id}" title="Löschen">✕</button>`:''}
     </div>`).join('');
   return`<div class="stat-grid">
     ${lboard(st.solos,'🃏','Meiste Solos',v=>v+'×')}
@@ -1202,7 +1229,7 @@ function vTisch(){
     return`<div class="card" style="padding:12px 14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="font-size:.78rem;font-weight:700;color:var(--t2)">${fmtS(s.date)}</span>
-        ${meIsAdmin()?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
+        ${canDo('sitzordnung')?`<button class="del-btn" data-del-sitz="${s.id}">✕</button>`:''}
       </div>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
         ${renderTableCompact(t1,1)}
@@ -1228,7 +1255,7 @@ function vEvents(){
         ${e.ort?`<div class="ev-ort">📍 ${esc(e.ort)}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px;padding-top:7px;border-top:1px solid var(--bd)">
           ${e.addedBy?`<span class="ev-by" style="margin:0">von ${esc(e.addedBy)}</span>`:'<span></span>'}
-          ${meIsAdmin()?`<div style="display:flex;gap:5px">
+          ${canDo('veranstaltungen')?`<div style="display:flex;gap:5px">
             <button class="rg-act" data-edit-event="${e.id}">✎ Bearbeiten</button>
             <button class="del-btn" data-del-event="${e.id}">✕</button>
           </div>`:''}
@@ -1240,7 +1267,7 @@ function vEvents(){
 
 // ══ REGELN ═══════════════════════════════════════════════
 function vRegeln(){
-  const adm=meIsAdmin();
+  const adm=canDo('regeln');
   const g={};
   DB.regeln.forEach(r=>{(g[r.kat]||(g[r.kat]=[])).push(r);});
   const defined=DB.kategorien.map(k=>k.name);
@@ -1576,38 +1603,73 @@ function mKategorie(katName){
 // ══ ADMIN PANEL ═══════════════════════════════════════════
 function openAdminPanel(){
   const rows=DB.users.map(u=>{
-    const adm=u.isAdmin;
+    const role=u.role||(u.isAdmin?'admin':'spieler');
     const isMe=u.name===ME;
-    return`<div class="admin-row">
-      <div class="u-av">${esc(ini(u.name))}</div>
-      <div class="adm-info">
-        <div class="adm-nm">${esc(u.name)}</div>
-        <div class="adm-role">${adm?'👑 Administrator':'Spieler'}</div>
-      </div>
-      <div style="display:flex;gap:5px;align-items:center">
-        ${!isMe?`<button class="adm-btn ${adm?'revoke':'grant'}" data-adm-user="${esc(u.name)}" data-adm-val="${adm?'0':'1'}">
-          ${adm?'Admin entfernen':'Admin machen'}
-        </button>`:'<span style="font-size:.72rem;color:var(--t3)">Du</span>'}
+    const perms=u.perms||[];
+    const roleBadge=ROLLEN[role]||ROLLEN.spieler;
+    const permChecks=role==='spieler'?Object.entries(PERM_LABELS).map(([key,label])=>`
+      <label style="display:flex;align-items:center;gap:7px;padding:4px 0;cursor:pointer;font-size:.82rem;color:var(--t2)">
+        <input type="checkbox" data-perm-user="${esc(u.name)}" data-perm-key="${key}"
+          ${perms.includes(key)?'checked':''} style="width:16px;height:16px;accent-color:var(--gold)">
+        ${label}
+      </label>`).join(''):'';
+    return`<div class="admin-row" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="u-av" style="width:34px;height:34px;font-size:.82rem">${esc(ini(u.name))}</div>
+        <div style="flex:1">
+          <div class="adm-nm">${esc(u.name)}${isMe?'<span style="font-size:.68rem;color:var(--t3);margin-left:5px">Du</span>':''}</div>
+          <div style="font-size:.76rem;color:var(--t3)">${roleBadge.icon} ${roleBadge.label} · ${roleBadge.desc}</div>
+        </div>
         <button class="adm-btn" data-reset-user="${esc(u.name)}" title="Passwort zurücksetzen">🔑</button>
       </div>
+      ${!isMe?`<select data-role-user="${esc(u.name)}"
+        style="width:100%;padding:8px 10px;background:var(--s3);border:1.5px solid var(--bd);
+          border-radius:var(--rs);color:var(--t1);font-size:.88rem;font-family:inherit">
+        ${Object.entries(ROLLEN).map(([k,v])=>`<option value="${k}"${k===role?' selected':''}>${v.icon} ${v.label} — ${v.desc}</option>`).join('')}
+      </select>`:''}
+      ${!isMe&&role==='spieler'&&permChecks?`
+        <div style="background:var(--s3);border-radius:var(--rs);padding:8px 12px;border:1px solid var(--bd)">
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+            color:var(--t3);margin-bottom:6px">Einzelne Rechte</div>
+          ${permChecks}
+        </div>`:''}
     </div>`;
   }).join('');
+
   openM(`<div class="sheet"><div class="s-drag"></div>
     <div class="s-title">⚙ Admin-Panel</div>
-    <div style="font-size:.75rem;color:var(--t3);text-align:center;margin-bottom:16px">
-      Nutzer verwalten · Admins können Rollen vergeben
+    <div style="font-size:.78rem;color:var(--t3);text-align:center;margin-bottom:16px">
+      Rollen &amp; Berechtigungen verwalten
     </div>
     ${rows||'<div style="color:var(--t3);text-align:center;padding:20px">Keine Nutzer</div>'}
     <div style="margin-top:12px"><button class="s-cancel" id="mc" style="width:100%">Schließen</button></div>
   </div>`);
+
   document.getElementById('mc').onclick=closeM;
-  document.querySelectorAll('[data-adm-user]').forEach(btn=>{
-    btn.onclick=()=>{
-      const u=DB.users.find(x=>x.name===btn.dataset.admUser);
-      if(u){u.isAdmin=btn.dataset.admVal==='1';saveDB();}
+
+  document.querySelectorAll('[data-role-user]').forEach(sel=>{
+    sel.onchange=()=>{
+      const u=DB.users.find(x=>x.name===sel.dataset.roleUser);
+      if(!u)return;
+      u.role=sel.value;
+      u.isAdmin=sel.value==='admin';
+      if(sel.value!=='spieler') u.perms=[];
+      saveDB();
       openAdminPanel();
     };
   });
+
+  document.querySelectorAll('[data-perm-user]').forEach(cb=>{
+    cb.onchange=()=>{
+      const u=DB.users.find(x=>x.name===cb.dataset.permUser);
+      if(!u)return;
+      u.perms=u.perms||[];
+      if(cb.checked){if(!u.perms.includes(cb.dataset.permKey))u.perms.push(cb.dataset.permKey);}
+      else{u.perms=u.perms.filter(p=>p!==cb.dataset.permKey);}
+      saveDB();
+    };
+  });
+
   document.querySelectorAll('[data-reset-user]').forEach(btn=>{
     btn.onclick=()=>mResetPw(btn.dataset.resetUser);
   });
