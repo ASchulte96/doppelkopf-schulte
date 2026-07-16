@@ -1170,7 +1170,8 @@ function vTermine(){
   const aktuell=GASTGEBER_ROT[idx];
   const naechster=GASTGEBER_ROT[(idx+1)%GASTGEBER_ROT.length];
   const letzter=DB.termine.length>1?GASTGEBER_ROT[(idx-1+GASTGEBER_ROT.length)%GASTGEBER_ROT.length]:null;
-  const letzterTermin=DB.termine.length>1?[...DB.termine].sort((a,b)=>a.date<b.date?1:-1).find(t=>t.date<today):null;
+  const _sorted=[...DB.termine].sort((a,b)=>a.date<b.date?1:-1);
+  const letzterTermin=_sorted.length>1?_sorted[1]:null;
   const nextTermin=upcoming[0];
   const gastgeberBanner=`<div style="background:var(--s2);border:1px solid var(--gold-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:4px">
     <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px">🏠 Nächster Gastgeber</div>
