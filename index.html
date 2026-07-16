@@ -1579,10 +1579,13 @@ function vTisch(){
       ${renderTableCompact(todaySitz.seats.slice(0,half),1)}
       ${renderTableCompact(todaySitz.seats.slice(half),2)}
     </div>
-    ${canDo('sitzordnung')?`<div style="text-align:center;margin-bottom:4px">
-      <button class="del-btn" data-del-sitz="${todaySitz.id}" style="font-size:.72rem;padding:3px 10px">
-        ✕ Sitzordnung löschen
-      </button></div>`:''}`;
+    <div style="text-align:center;margin-bottom:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/?text=${sitzWaText(todaySitz.seats)}" target="_blank"
+        style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;font-size:.78rem;font-weight:700;
+        background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.4);border-radius:var(--rs);
+        color:#4ADE80;text-decoration:none">📤 WhatsApp</a>
+      ${canDo('sitzordnung')?`<button class="del-btn" data-del-sitz="${todaySitz.id}" style="font-size:.72rem;padding:5px 10px">✕ Löschen</button>`:''}
+    </div>`;
   }
 
   // Halli-Galli Solo-Tracker
@@ -2529,6 +2532,11 @@ function mSitzordnung(){
     <button class="btn-outline" id="ms-save" style="margin-top:8px;display:none">
       💾 Diese Sitzordnung speichern
     </button>
+    <a id="ms-wa" target="_blank" class="btn-outline"
+      style="margin-top:6px;display:none;text-decoration:none;justify-content:center;align-items:center;gap:7px;
+      background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.4);color:#4ADE80">
+      📤 Via WhatsApp teilen
+    </a>
   </div>`);
   document.getElementById('mc').onclick=closeM;
 
@@ -2539,6 +2547,8 @@ function mSitzordnung(){
     const saveBtn=document.getElementById('ms-save');
     if(!grid)return;
     if(saveBtn) saveBtn.style.display='none';
+    const waBtn=document.getElementById('ms-wa');
+    if(waBtn) waBtn.style.display='none';
     if(hint) hint.textContent='Würfelt…';
     let frame=0;
     rollTimer=setInterval(()=>{
@@ -2550,6 +2560,7 @@ function mSitzordnung(){
         grid.innerHTML=slots(currentOrder,false);
         if(hint) hint.textContent='Sitzordnung für heute Abend';
         if(saveBtn) saveBtn.style.display='flex';
+        if(waBtn){waBtn.href='https://wa.me/?text='+sitzWaText(currentOrder);waBtn.style.display='flex';}
       }
     },80);
   }
@@ -2579,14 +2590,26 @@ function computePairings(){
   const counts={};
   DB.sitzordnungen.forEach(s=>{
     const seats=s.seats||[];
-    for(let i=0;i<seats.length;i++){
-      for(let j=i+1;j<seats.length;j++){
-        const key=[seats[i],seats[j]].sort().join('|||');
-        counts[key]=(counts[key]||0)+1;
+    const half=Math.ceil(seats.length/2);
+    [seats.slice(0,half),seats.slice(half)].forEach(tisch=>{
+      for(let i=0;i<tisch.length;i++){
+        for(let j=i+1;j<tisch.length;j++){
+          const key=[tisch[i],tisch[j]].sort().join('|||');
+          counts[key]=(counts[key]||0)+1;
+        }
       }
-    }
+    });
   });
   return counts;
+}
+
+function sitzWaText(seats){
+  const half=Math.ceil(seats.length/2);
+  const t1=seats.slice(0,half),t2=seats.slice(half);
+  return encodeURIComponent(
+    '🎲 Sitzordnung für heute Abend\n\nTisch 1:\n'+t1.map(n=>'  '+n).join('\n')+
+    '\n\nTisch 2:\n'+t2.map(n=>'  '+n).join('\n')
+  );
 }
 
 // ══ SAISON ════════════════════════════════════════════════
