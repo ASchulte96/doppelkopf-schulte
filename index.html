@@ -1728,7 +1728,7 @@ function mTermin(t){
     ${!isEdit?`<div class="sf"><label>Von</label><input type="text" value="${esc(ME)}" readonly/></div>`:''}
     <div class="sf"><label>Datum</label><input type="date" id="m-date" value="${t?.date||''}" min="${isEdit?'':new Date().toISOString().slice(0,10)}"/></div>
     <div class="sf"><label>Uhrzeit</label><input type="time" id="m-time" value="${t?.time||'19:30'}"/></div>
-    <div class="sf"><label>Ort</label><input type="text" id="m-ort" value="${esc(t?.ort||'Gasthaus Krone')}"/></div>
+    <div class="sf"><label>Ort</label><input type="text" id="m-ort" value="${esc(t?.ort||(()=>{const ROT=['Franz','Georg','Matthias','Aloys'];const ORT={Franz:'Heitel',Georg:'Lünne',Matthias:'Rheine',Aloys:'Spelle'};const next=ROT[DB.termine.length%ROT.length];return ORT[next];})())}"/></div>
     ${isEdit?`<button class="btn-outline" id="m-del" style="margin-bottom:10px;border-color:var(--red-bd);color:var(--red)">Termin löschen</button>`:''}
     <div class="sa"><button class="s-cancel" id="mc">Abbrechen</button>
       <button class="s-save" id="ms">${isEdit?'Speichern ✓':'Vorschlagen ✓'}</button>
