@@ -1165,12 +1165,12 @@ function vTermine(){
       <div style="margin-top:8px">${past.map((t,i)=>terminCard(t,i,true)).join('')}</div>
     </details>`:'';
 
-  const rot=DB.gastgeberRot||['Matthias','Aloys','Franz','Georg'];
-  const ref=DB.gastgeberRef||{date:'2026-08-08',idx:2};
-  const passedSinceRef=DB.termine.filter(t=>t.date>=ref.date&&t.date<today).length;
-  const idx=(ref.idx+passedSinceRef)%rot.length;
-  const aktuell=rot[idx];
-  const naechster=rot[(idx+1)%rot.length];
+  const GASTGEBER_ROT=['Franz','Georg','Matthias','Aloys'];
+  const GASTGEBER_REF={date:'2026-08-08',idx:0}; // ab 08.08. ist Franz (idx 0) dran
+  const passedSinceRef=DB.termine.filter(t=>t.date>=GASTGEBER_REF.date&&t.date<today).length;
+  const idx=(GASTGEBER_REF.idx+passedSinceRef)%GASTGEBER_ROT.length;
+  const aktuell=GASTGEBER_ROT[idx];
+  const naechster=GASTGEBER_ROT[(idx+1)%GASTGEBER_ROT.length];
   const nextTermin=upcoming[0];
   const gastgeberBanner=`<div style="background:var(--s2);border:1px solid var(--gold-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:4px">
     <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px">🏠 Nächster Gastgeber</div>
