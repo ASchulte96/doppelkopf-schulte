@@ -1037,6 +1037,27 @@ async function checkFbPush(){
   }catch(e){}
 }
 
+function showToast(msg,ms=2800){
+  let el=document.getElementById('dk-toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='dk-toast';
+    el.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);'+
+      'background:#2a2a3e;border:1px solid var(--gold-bd);color:var(--t1);padding:12px 20px;'+
+      'border-radius:14px;font-size:.85rem;font-weight:500;text-align:center;max-width:88vw;'+
+      'box-shadow:0 8px 32px #0008;opacity:0;transition:opacity .25s,transform .25s;z-index:9999;pointer-events:none';
+    document.body.appendChild(el);
+  }
+  clearTimeout(el._t);
+  el.textContent=msg;
+  el.style.opacity='1';
+  el.style.transform='translateX(-50%) translateY(0)';
+  el._t=setTimeout(()=>{
+    el.style.opacity='0';
+    el.style.transform='translateX(-50%) translateY(20px)';
+  },ms);
+}
+
 function notify(title,body){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   if(document.visibilityState==='visible')return; // App ist offen → keine Benachrichtigung nötig
@@ -2363,12 +2384,34 @@ function bindContent(){
     if(DB.tab==='tisch')     mSitzordnung();
     if(DB.tab==='regeln')    mRegel(null, DB.kategorien[0]?.name);
   };
+  const NEIN_MSGS=[
+    'Schade. Die anderen werden es irgendwie verkraften… irgendwie. 🙄',
+    'Wieder wichtigere Dinge als Freunde und Doppelkopf? Respekt.',
+    'Dein Stuhl wird heute Abend sehr, sehr vermisst werden.',
+    'Feige! 🐔 Die Karten hatten extra auf dich gewartet.',
+    'Das Sparschwein weint. Und die anderen auch.',
+    'Ohne dich macht das keinen Spaß. Na ja, eigentlich doch.',
+    'Irgendwo weint gerade ein Skatbruder mit dir.',
+    'Krank? Kopfweh? Oder einfach Angst vor dem Verlieren?',
+    'Wir hätten dir heute extra viele Strafen gegeben. Schade.',
+    'Hast du wenigstens einen Vertreter? Nein? Natürlich nicht.',
+    'Netflix wartet. Die Runde auch. Netflix gewinnt wieder.',
+    'Abgesagt. Wieder mal. Das wird notiert. 📋',
+    'Sehr mutig, bei der Runde abzusagen die du sowieso verloren hättest.',
+    'Sofaspieler des Abends. Herzlichen Glückwunsch! 🛋️',
+    'Deine Mitspieler wurden informiert. Sie sind tief enttäuscht.',
+  ];
   document.querySelectorAll('[data-vote]').forEach(b=>{
     b.onclick=()=>{
       const t=DB.termine.find(x=>x.id===+b.dataset.tid);
       if(!t)return;
       t.votes=t.votes||{};
-      if(t.votes[ME]===b.dataset.vote) delete t.votes[ME]; else t.votes[ME]=b.dataset.vote;
+      const war=t.votes[ME];
+      if(war===b.dataset.vote) delete t.votes[ME]; else t.votes[ME]=b.dataset.vote;
+      if(b.dataset.vote==='nein'&&war!=='nein'){
+        const msg=NEIN_MSGS[Math.floor(Math.random()*NEIN_MSGS.length)];
+        showToast(msg,4000);
+      }
       saveDB();render();
     };
   });
