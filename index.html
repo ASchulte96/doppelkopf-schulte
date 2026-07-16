@@ -1166,9 +1166,7 @@ function vTermine(){
     </details>`:'';
 
   const GASTGEBER_ROT=['Franz','Georg','Matthias','Aloys'];
-  const GASTGEBER_REF={date:'2026-08-08',idx:0}; // ab 08.08. ist Franz (idx 0) dran
-  const passedSinceRef=DB.termine.filter(t=>t.date>=GASTGEBER_REF.date&&t.date<today).length;
-  const idx=(GASTGEBER_REF.idx+passedSinceRef)%GASTGEBER_ROT.length;
+  const idx=Math.max(0,DB.termine.length-1)%GASTGEBER_ROT.length;
   const aktuell=GASTGEBER_ROT[idx];
   const naechster=GASTGEBER_ROT[(idx+1)%GASTGEBER_ROT.length];
   const nextTermin=upcoming[0];
