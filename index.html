@@ -1127,6 +1127,10 @@ function vTermine(){
         <div>
           <div class="t-date">${esc(fmtD(t.date))}</div>
           <div class="t-meta">🕖 ${esc(t.time)} Uhr · 📍 ${esc(t.ort)}</div>
+          ${t.ort==='Spelle'?`<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+            <a href="https://pizzeria-by-ali.de/" target="_blank" style="font-size:.72rem;color:var(--gold);text-decoration:none;background:var(--s2);border:1px solid var(--gold-bd);border-radius:var(--rs);padding:2px 8px">🍕 Pizzeria by Ali</a>
+            <a href="https://www.foodbooking.com/ordering/restaurant/menu?restaurant_uid=bb6e8a73-a79c-41d8-b84c-85ca530d9c9c" target="_blank" style="font-size:.72rem;color:var(--gold);text-decoration:none;background:var(--s2);border:1px solid var(--gold-bd);border-radius:var(--rs);padding:2px 8px">🍕 EMS-Pizzeria</a>
+          </div>`:''}
           ${t.addedBy?`<div class="t-by">von ${esc(t.addedBy)}</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
