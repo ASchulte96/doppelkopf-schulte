@@ -1583,7 +1583,11 @@ function vTisch(){
       <a href="https://wa.me/?text=${sitzWaText(todaySitz.seats)}" target="_blank"
         style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;font-size:.78rem;font-weight:700;
         background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.4);border-radius:var(--rs);
-        color:#4ADE80;text-decoration:none">📤 WhatsApp</a>
+        color:#4ADE80;text-decoration:none">📤 Als Text</a>
+      <button onclick="sitzAlsFoto(${JSON.stringify(todaySitz.seats)})"
+        style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;font-size:.78rem;font-weight:700;
+        background:rgba(99,102,241,.12);border:1.5px solid rgba(99,102,241,.4);border-radius:var(--rs);
+        color:#818cf8;cursor:pointer">🖼️ Als Foto</button>
       ${canDo('sitzordnung')?`<button class="del-btn" data-del-sitz="${todaySitz.id}" style="font-size:.72rem;padding:5px 10px">✕ Löschen</button>`:''}
     </div>`;
   }
@@ -2535,8 +2539,13 @@ function mSitzordnung(){
     <a id="ms-wa" target="_blank" class="btn-outline"
       style="margin-top:6px;display:none;text-decoration:none;justify-content:center;align-items:center;gap:7px;
       background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.4);color:#4ADE80">
-      📤 Via WhatsApp teilen
+      📤 Als Text teilen
     </a>
+    <button id="ms-foto" class="btn-outline"
+      style="margin-top:6px;display:none;justify-content:center;align-items:center;gap:7px;
+      background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.4);color:#818cf8">
+      🖼️ Als Foto teilen
+    </button>
   </div>`);
   document.getElementById('mc').onclick=closeM;
 
@@ -2548,7 +2557,9 @@ function mSitzordnung(){
     if(!grid)return;
     if(saveBtn) saveBtn.style.display='none';
     const waBtn=document.getElementById('ms-wa');
+    const fotoBtn=document.getElementById('ms-foto');
     if(waBtn) waBtn.style.display='none';
+    if(fotoBtn) fotoBtn.style.display='none';
     if(hint) hint.textContent='Würfelt…';
     let frame=0;
     rollTimer=setInterval(()=>{
@@ -2561,12 +2572,14 @@ function mSitzordnung(){
         if(hint) hint.textContent='Sitzordnung für heute Abend';
         if(saveBtn) saveBtn.style.display='flex';
         if(waBtn){waBtn.href='https://wa.me/?text='+sitzWaText(currentOrder);waBtn.style.display='flex';}
+        if(fotoBtn) fotoBtn.style.display='flex';
       }
     },80);
   }
 
   roll();
   document.getElementById('ms-neu').onclick=roll;
+  document.getElementById('ms-foto').onclick=()=>sitzAlsFoto(currentOrder);
   document.getElementById('ms-save').onclick=()=>{
     const phase=DB.tischPhase||0;
     DB.sitzordnungen.push({
@@ -2601,6 +2614,97 @@ function computePairings(){
     });
   });
   return counts;
+}
+
+async function sitzAlsFoto(seats){
+  const half=Math.ceil(seats.length/2);
+  const t1=seats.slice(0,half),t2=seats.slice(half);
+  const DATE=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const PAD=32,TW=260,GAP=24,ROW=44,HEADER=110,FOOTER=48;
+  const rows=Math.max(t1.length,t2.length);
+  const W=PAD*2+TW*2+GAP, H=HEADER+rows*ROW+PAD+FOOTER;
+  const cv=document.createElement('canvas');
+  cv.width=W*2;cv.height=H*2; // 2x für Schärfe
+  const cx=cv.getContext('2d');
+  cx.scale(2,2);
+
+  // Hintergrund
+  cx.fillStyle='#1a1a2e';
+  cx.fillRect(0,0,W,H);
+
+  // Titel
+  cx.fillStyle='#c9a227';
+  cx.font='bold 18px system-ui,sans-serif';
+  cx.textAlign='center';
+  cx.fillText('🃏 DoppelKopf Schulte',W/2,38);
+  cx.fillStyle='#a0a0b8';
+  cx.font='13px system-ui,sans-serif';
+  cx.fillText('Sitzordnung · '+DATE,W/2,60);
+
+  // Trennlinie
+  cx.strokeStyle='#c9a22744';
+  cx.lineWidth=1;
+  cx.beginPath();cx.moveTo(PAD,74);cx.lineTo(W-PAD,74);cx.stroke();
+
+  // Tisch-Karten
+  [[t1,'Tisch 1'],[t2,'Tisch 2']].forEach(([gruppe,label],ti)=>{
+    const x=PAD+ti*(TW+GAP);
+    const y=84;
+
+    // Karten-Hintergrund
+    cx.fillStyle='#252540';
+    roundRect(cx,x,y,TW,HEADER-84+rows*ROW+8,10);
+    cx.fill();
+
+    // Tisch-Label
+    cx.fillStyle='#c9a227';
+    cx.font='bold 13px system-ui,sans-serif';
+    cx.textAlign='left';
+    cx.fillText(label,x+14,y+22);
+
+    // Spieler
+    gruppe.forEach((name,i)=>{
+      const ry=y+38+i*ROW;
+      // Avatar-Kreis
+      cx.fillStyle='#c9a22722';
+      cx.beginPath();cx.arc(x+22,ry+12,14,0,Math.PI*2);cx.fill();
+      cx.fillStyle='#c9a227';
+      cx.font='bold 12px system-ui,sans-serif';
+      cx.textAlign='center';
+      cx.fillText(name.slice(0,2).toUpperCase(),x+22,ry+16);
+      // Name
+      cx.fillStyle='#e8e8f0';
+      cx.font='14px system-ui,sans-serif';
+      cx.textAlign='left';
+      cx.fillText(name,x+42,ry+16);
+    });
+  });
+
+  // Footer
+  cx.fillStyle='#505070';
+  cx.font='11px system-ui,sans-serif';
+  cx.textAlign='center';
+  cx.fillText('doppelkopf-schulte.web.app',W/2,H-16);
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  }
+
+  cv.toBlob(async blob=>{
+    const file=new File([blob],'sitzordnung.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'Sitzordnung DoppelKopf Schulte'});return;}catch(e){}
+    }
+    // Fallback: Download
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='sitzordnung.png';
+    a.click();
+  },'image/png');
 }
 
 function sitzWaText(seats){
