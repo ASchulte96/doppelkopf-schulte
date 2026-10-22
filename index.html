@@ -946,14 +946,14 @@ async function doAuth(){
       if(pw!==pw2){aErr('Passwörter stimmen nicht überein.');return;}
       // Erst aktuellen Stand von Firebase holen bevor registriert wird
       await syncPull();
-      if(DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase())){aErr('Name bereits vergeben.');return;}
+      if(DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase()||(u.login||'').toLowerCase()===name.toLowerCase())){aErr('Name bereits vergeben.');return;}
       const isAlex=name.toLowerCase()==='alex';
       const noAdmins=!DB.users.some(u=>u.isAdmin);
-      DB.users.push({name,hash,isAdmin:isAlex||noAdmins&&false});
+      DB.users.push({name,login:name,hash,isAdmin:isAlex||noAdmins&&false});
       if(isAlex) DB.users[DB.users.length-1].isAdmin=true;
       saveDB(`${name} hat sich registriert`);ME=name;saveMe(ME,true);startApp();startPresence();
     }else{
-      const u=DB.users.find(u=>u.name.toLowerCase()===name.toLowerCase()&&u.hash===hash);
+      const u=DB.users.find(u=>(u.login||u.name).toLowerCase()===name.toLowerCase()&&u.hash===hash);
       if(!u){aErr('Name oder Passwort falsch.');return;}
       // migrate: ensure Alex is always admin
       if(u.name.toLowerCase()==='alex'&&!u.isAdmin){u.isAdmin=true;saveDB();}
@@ -2348,7 +2348,8 @@ function mRenameUser(oldName){
     }
     // Alle verknüpften Felder aktualisieren
     const u=DB.users.find(u=>u.name===oldName);
-    if(u) u.name=newName;
+    if(u){ if(!u.login) u.login=oldName; u.name=newName; }
+    if(ME===oldName){ME=newName;saveMe(ME,!!localStorage.getItem(MEK));}
     DB.strafen.forEach(s=>{if(s.player===oldName)s.player=newName;if(s.addedBy===oldName)s.addedBy=newName;});
     DB.ereignisse.forEach(e=>{if(e.player===oldName)e.player=newName;if(e.addedBy===oldName)e.addedBy=newName;});
     DB.kasse.forEach(b=>{if(b.addedBy===oldName)b.addedBy=newName;});
