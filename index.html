@@ -2214,6 +2214,7 @@ async function openAdminPanel(){
         </div>
         <button class="adm-btn" data-rename-user="${esc(u.name)}" title="Umbenennen">✎</button>
         <button class="adm-btn" data-reset-user="${esc(u.name)}" title="Passwort zurücksetzen">🔑</button>
+        ${!isMe?`<button class="adm-btn" data-delete-user="${esc(u.name)}" title="Benutzer löschen" style="color:var(--red)">✕</button>`:''}
       </div>
       ${!isMe?`<select data-role-user="${esc(u.name)}"
         style="width:100%;padding:8px 10px;background:var(--s3);border:1.5px solid var(--bd);
@@ -2305,6 +2306,18 @@ async function openAdminPanel(){
   });
   document.querySelectorAll('[data-reset-user]').forEach(btn=>{
     btn.onclick=()=>mResetPw(btn.dataset.resetUser);
+  });
+  document.querySelectorAll('[data-delete-user]').forEach(btn=>{
+    btn.onclick=()=>{
+      const name=btn.dataset.deleteUser;
+      if(name===ME)return;
+      if(!confirm(`Benutzer "${name}" wirklich löschen?\nStimmen und Einträge bleiben erhalten.`))return;
+      DB.users=DB.users.filter(u=>u.name!==name);
+      DB.termine.forEach(t=>{if(t.votes)delete t.votes[name];});
+      saveDB(`Benutzer ${name} gelöscht`);
+      closeM();
+      openAdminPanel();
+    };
   });
 }
 
